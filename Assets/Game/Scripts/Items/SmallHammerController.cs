@@ -23,52 +23,44 @@ public class SmallHammerController : NetworkBehaviour
     void Update()
     {
         if (!isOwned) return;
-        if (Input.GetMouseButtonDown(1))
-        {
-            if (!player.escaped)
-            {
-                if (serverProperties.instance.spawnn)
-                {
-                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                    /*RaycastHit hit;
-                    if (Physics.Raycast(ray, out hit, raycastDistance))
-                    {*/
-                    spawnPosition = GetRaycastHitPoint(ray, raycastDistance);
-                    spawnedGhost = Instantiate(GhostPrefab, spawnPosition, Quaternion.identity);
-                    //}
-                }
-            }
-        }
-        if (Input.GetMouseButton(1))
-        {
-            if (spawnPosition != null)
-            {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                //RaycastHit hit;
-                //Physics.Raycast(ray, out hit, raycastDistance);
-                //{
-                    Vector3 localSpawnPosition = GetRaycastHitPoint(ray, raycastDistance);
-                    spawnedGhost.transform.localScale = (localSpawnPosition - spawnPosition) * 50;
-                //}
-            }
-        }
-        if (Input.GetMouseButtonUp(1))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            //RaycastHit hit;
-            //if (Physics.Raycast(ray, out hit, raycastDistance))
-            //{
-                Vector3 localSpawnPosition = GetRaycastHitPoint(ray, raycastDistance);
-                Destroy(spawnedGhost);
-                spawnedGhost = null;
-                GameObject spawnedCube = Instantiate(CubePrefab, spawnPosition, Quaternion.identity);
-                NetworkServer.Spawn(spawnedCube);
+    }
 
-                spawnedCube.transform.localScale = (localSpawnPosition - spawnPosition) * 50;
+    public void MobileRightMouseDownAction()
+    {
+        if (!isOwned) return;
+        if (player.escaped) return;
+        if (!serverProperties.instance.spawnn) return;
 
-                spawnPosition = new Vector3(0,0,0);
-            //}
-        }
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        spawnPosition = GetRaycastHitPoint(ray, raycastDistance);
+        spawnedGhost = Instantiate(GhostPrefab, spawnPosition, Quaternion.identity);
+    }
+
+    public void MobileRightMouseHoldAction()
+    {
+        if (!isOwned) return;
+        if (spawnedGhost == null) return;
+
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Vector3 localSpawnPosition = GetRaycastHitPoint(ray, raycastDistance);
+        spawnedGhost.transform.localScale = (localSpawnPosition - spawnPosition) * 50;
+    }
+
+    public void MobileRightMouseUpAction()
+    {
+        if (!isOwned) return;
+        if (spawnedGhost == null) return;
+
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Vector3 localSpawnPosition = GetRaycastHitPoint(ray, raycastDistance);
+        Destroy(spawnedGhost);
+        spawnedGhost = null;
+        GameObject spawnedCube = Instantiate(CubePrefab, spawnPosition, Quaternion.identity);
+        NetworkServer.Spawn(spawnedCube);
+
+        spawnedCube.transform.localScale = (localSpawnPosition - spawnPosition) * 50;
+
+        spawnPosition = new Vector3(0,0,0);
     }
     Vector3 GetRaycastHitPoint(Ray ray, float distance)
     {

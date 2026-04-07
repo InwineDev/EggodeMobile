@@ -2,7 +2,6 @@ using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using TMPro;
 using UnityEngine;
 
 public class ItemLoaderLobby : MonoBehaviour
@@ -11,50 +10,88 @@ public class ItemLoaderLobby : MonoBehaviour
     public List<GameObject> objects = new List<GameObject>();
     private static bool strah;
 
-    void Start()
+    private void Start()
     {
+        Debug.Log(strah);
 
-        print(strah);
-        if (strah == false)
+        string customItemsDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "customItems");
+
+        if (!Directory.Exists(customItemsDir))
         {
-            path = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(Application.dataPath), "customItems"), "*.eggodeitem", SearchOption.AllDirectories);
+            Debug.LogWarning($"Папка не найдена: {customItemsDir}");
+            return;
+        }
+
+        path = Directory.GetFiles(customItemsDir, "*.eggodeitem", SearchOption.AllDirectories);
+
+        if (!strah)
+        {
             strah = true;
-            StartCoroutine(loadBundle(path));
         }
-        else
-        {
-            path = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(Application.dataPath), "customItems"), "*.eggodeitem", SearchOption.AllDirectories);
-            StartCoroutine(loadBundle(path));
-        }
+
+        StartCoroutine(LoadBundle(path));
     }
 
-    IEnumerator loadBundle(string[] path)
+    private IEnumerator LoadBundle(string[] paths)
     {
         AssetBundle.UnloadAllAssetBundles(true);
-        foreach (var i in path)
+
+        foreach (string bundlePath in paths)
         {
+            if (string.IsNullOrEmpty(bundlePath))
+                continue;
 
-            while (!Caching.ready) yield return null;
-
-            var www = new WWW(i);
-            yield return www;
-
-            if (!string.IsNullOrEmpty(www.error))
+            if (!File.Exists(bundlePath))
             {
-                print(www.error);
-                yield break;
+                Debug.LogWarning($"Файл не найден: {bundlePath}");
+                continue;
             }
 
-            var assetBan = www.assetBundle;
+            AssetBundleCreateRequest bundleRequest = AssetBundle.LoadFromFileAsync(bundlePath);
+            yield return bundleRequest;
 
-            GameObject[] loadedObject = assetBan.LoadAllAssets<GameObject>();
+            AssetBundle assetBundle = bundleRequest.assetBundle;
 
-            foreach (var item in loadedObject)
+            if (assetBundle == null)
             {
-                objects.Add(item);
-                FindObjectOfType<NetworkManager>().spawnPrefabs.Add(item);
-                var sus = Instantiate(item);
+                Debug.LogError($"Не удалось загрузить AssetBundle: {bundlePath}");
+                continue;
             }
+
+            AssetBundleRequest assetsRequest = assetBundle.LoadAllAssetsAsync<GameObject>();
+            yield return assetsRequest;
+
+            Object[] loadedAssets = assetsRequest.allAssets;
+
+            if (loadedAssets == null || loadedAssets.Length == 0)
+            {
+                Debug.LogWarning($"В бандле нет GameObject: {bundlePath}");
+                assetBundle.Unload(false);
+                continue;
+            }
+
+            NetworkManager networkManager = FindObjectOfType<NetworkManager>();
+
+            foreach (Object loadedAsset in loadedAssets)
+            {
+                GameObject item = loadedAsset as GameObject;
+                if (item == null)
+                    continue;
+
+                if (!objects.Contains(item))
+                {
+                    objects.Add(item);
+                }
+
+                if (networkManager != null && !networkManager.spawnPrefabs.Contains(item))
+                {
+                    networkManager.spawnPrefabs.Add(item);
+                }
+
+                Instantiate(item);
+            }
+
+            assetBundle.Unload(false);
         }
     }
 }

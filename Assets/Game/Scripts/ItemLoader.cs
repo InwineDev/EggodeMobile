@@ -92,7 +92,12 @@ public class ItemLoader : NetworkBehaviour
             return;
         }
 
-        toRPC.transform.parent = kuda.transform;
+        toRPC.transform.SetParent(kuda.transform, false);
+        TipikalPredmet tipikalPredmet = toRPC.GetComponent<TipikalPredmet>();
+        if (tipikalPredmet != null)
+        {
+            tipikalPredmet.init();
+        }
     }
 
 

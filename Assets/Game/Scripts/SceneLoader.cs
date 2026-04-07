@@ -1,10 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System;
-using Mirror;
-using Steamworks;
 
 public class SceneLoader : MonoBehaviour
 {
@@ -30,7 +27,7 @@ public class SceneLoader : MonoBehaviour
 
     public void Starting()
     {
-       StartCoroutine(LoadNextScene());
+        StartCoroutine(LoadNextScene());
     }
 
     private IEnumerator LoadNextScene()
@@ -38,11 +35,18 @@ public class SceneLoader : MonoBehaviour
         if (scenes == "MapEdit")
         {
             yield return new WaitForSeconds(seconds);
-            SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypePrivate, 1);
-            FindObjectOfType<NetworkManager>().StartHost();
-            FindObjectOfType<NetworkManager>().ServerChangeScene("MapEdit");
+
+            NetworkManager manager = FindObjectOfType<NetworkManager>();
+            if (manager != null)
+            {
+                manager.StartHost();
+                manager.ServerChangeScene("MapEdit");
+            }
+
             SceneManager.LoadScene(scenes);
+            yield break;
         }
+
         yield return new WaitForSeconds(seconds);
         SceneManager.LoadScene(scenes);
     }

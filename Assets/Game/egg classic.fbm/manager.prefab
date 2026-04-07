@@ -147,13 +147,13 @@ GameObject:
   - component: {fileID: 8485395428058311880}
   - component: {fileID: 5616336978395872932}
   - component: {fileID: 5510944523247578739}
-  - component: {fileID: 4133884032037896206}
   - component: {fileID: 7120575635606657551}
   - component: {fileID: 2395348192305127268}
   - component: {fileID: 824001634545152222}
   - component: {fileID: 2309850088822409284}
   - component: {fileID: 9053296264071191669}
   - component: {fileID: 8294205032031317460}
+  - component: {fileID: 1431530225608339925}
   m_Layer: 0
   m_Name: manager
   m_TagString: Untagged
@@ -197,7 +197,7 @@ MonoBehaviour:
   offlineScene: Assets/Game/Scenes/Menu.unity
   onlineScene: Assets/Game/Scenes/Game.unity
   offlineSceneLoadDelay: 0
-  transport: {fileID: 4133884032037896206}
+  transport: {fileID: 1431530225608339925}
   networkAddress: localhost
   maxConnections: 100
   disconnectInactiveConnections: 0
@@ -334,24 +334,6 @@ MonoBehaviour:
   strahErrora: {fileID: 4128015116272819377}
   objectsMapEditor: []
   objectsItems: []
---- !u!114 &4133884032037896206
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4561116472773934331}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea368fb6f27ec2f40a40e20977992b9c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Channels: 0200000001000000
-  Timeout: 25
-  SteamAppID: 480
-  AllowSteamRelay: 1
-  UseNextGenSteamNetworking: 1
-  SteamUserID: 0
 --- !u!114 &7120575635606657551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -522,13 +504,42 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4561116472773934331}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6442dc8070ceb41f094e44de0bf87274, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   offsetX: 0
   offsetY: 0
+--- !u!114 &1431530225608339925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4561116472773934331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b0fecffa3f624585964b0d0eb21b18e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  port: 7777
+  DualMode: 1
+  NoDelay: 1
+  Interval: 10
+  Timeout: 10000
+  RecvBufferSize: 7361536
+  SendBufferSize: 7361536
+  FastResend: 2
+  ReceiveWindowSize: 4096
+  SendWindowSize: 4096
+  MaxRetransmit: 40
+  MaximizeSocketBuffers: 1
+  ReliableMaxMessageSize: 297433
+  UnreliableMaxMessageSize: 1194
+  debugLog: 0
+  statisticsGUI: 0
+  statisticsLog: 0
 --- !u!1 &4609263360923635646
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,16 +2,15 @@ using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ConsoleController : MonoBehaviour
 {
-    [Header("Команды")]
+    [Header("")]
     public List<ConsoleCommand> commands = new List<ConsoleCommand>();
 
-    [Header("Компоненты")]
+    [Header("")]
     public TMP_InputField tmpro;
     public GameObject prefabMessage;
     public static ConsoleController cc;

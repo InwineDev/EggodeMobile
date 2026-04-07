@@ -1,7 +1,6 @@
 using Mirror;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 public class FlamethrowerController : NetworkBehaviour
@@ -14,7 +13,6 @@ public class FlamethrowerController : NetworkBehaviour
     [SerializeField] private List<AudioClip> clips = new List<AudioClip>();
     [SerializeField] private GameObject effect;
     [SerializeField] private GameObject effectToSpawn;
-
     [SerializeField] private Animator animator;
 
     [SyncVar]
@@ -29,15 +27,13 @@ public class FlamethrowerController : NetworkBehaviour
     [ClientRpc]
     void RpcSpawn()
     {
-
     }
 
     [Command]
     void DAMAGEITEM(name24 sus)
     {
-
-        bool uron2 = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().destroy;
-        if (uron2)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.destroy)
         {
             print("sus1");
             sus._hp -= damage + Random.Range(0, 5);
@@ -47,8 +43,8 @@ public class FlamethrowerController : NetworkBehaviour
     [Command]
     void DAMA3GE(Health sus)
     {
-        bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-        if (uron)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.hp)
         {
             print("sus1");
             sus.health -= damage + Random.Range(0, 5);
@@ -59,26 +55,34 @@ public class FlamethrowerController : NetworkBehaviour
             }
         }
     }
+
     void Update()
     {
+        if (s == null) s = GetComponent<TipikalPredmet>();
+        if (s == null || s.usersettingitems == null || s.usersettingitems.player == null) return;
         if (s.usersettingitems.player.escaped) return;
-        if(isOwned && Input.GetMouseButtonDown(0))
-        {
-            CmdChangeEffectOn();
-        }
-        if (isOwned && Input.GetMouseButton(0))
-        {
-                CmdShoot();
-        }
-        if (isOwned && Input.GetMouseButtonUp(0))
-        {
-            CmdChangeEffectOff();
-        }
+    }
+
+    public void MobileLeftMouseDownAction()
+    {
+        if (!isOwned) return;
+        CmdChangeEffectOn();
+    }
+
+    public void MobileLeftMouseHoldAction()
+    {
+        if (!isOwned) return;
+        CmdShoot();
+    }
+
+    public void MobileLeftMouseUpAction()
+    {
+        if (!isOwned) return;
+        CmdChangeEffectOff();
     }
 
     private void OnEnable()
     {
-
     }
 
     [Command]
@@ -86,26 +90,31 @@ public class FlamethrowerController : NetworkBehaviour
     {
         ChangeEffectOn();
     }
+
     [Command]
     void CmdChangeEffectOff()
     {
         ChangeEffectOff();
     }
+
     [ClientRpc]
     void ChangeEffectOn()
     {
         if (effect)
         {
-            ad.Play();
+            if (ad != null && !ad.isPlaying)
+                ad.Play();
             effect.SetActive(true);
         }
     }
+
     [ClientRpc]
     void ChangeEffectOff()
     {
         if (effect)
         {
-            ad.Stop();
+            if (ad != null)
+                ad.Stop();
             effect.SetActive(false);
         }
     }

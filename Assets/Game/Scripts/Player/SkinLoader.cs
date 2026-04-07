@@ -1,10 +1,5 @@
 using Mirror;
-using Mirror.Examples.Common;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
-using UnityEngine.UI;
 
 [System.Serializable]
 public class SkinDataObjectData
@@ -21,154 +16,106 @@ public class SkinLoader : NetworkBehaviour
     public SkinDataObjectData[] eyes;
     public SkinDataObjectData[] hats;
 
-    [SyncVar(hook = nameof(ChangeBody))]
-    public int body;
+    [SyncVar(hook = nameof(ChangeBody))] public int body;
+    [SyncVar(hook = nameof(ChangeNose))] public int nose;
+    [SyncVar(hook = nameof(ChangeMouth))] public int mouth;
+    [SyncVar(hook = nameof(ChangeEye))] public int eye;
+    [SyncVar(hook = nameof(ChangeHat))] public int hat;
 
-    [SyncVar(hook = nameof(ChangeNose))]
-    public int nose;
-
-    [SyncVar(hook = nameof(ChangeMouth))]
-    public int mouth;
-
-    [SyncVar(hook = nameof(ChangeEye))]
-    public int eye;
-
-    [SyncVar(hook = nameof(ChangeHat))]
-    public int hat;
-
-    void Start()
+    private void Start()
     {
         if (isLocalPlayer)
-        {
             Load();
-        }
         else
-        {
-            // Apply the current SyncVar values for remote players
-            ChangeBody(0, body);
-            ChangeNose(0, nose);
-            ChangeMouth(0, mouth);
-            ChangeEye(0, eye);
-            ChangeHat(0, hat);
-        }
+            ApplySyncVars();
     }
 
     public void Load()
     {
-        string jsonFilePath = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Skin.eggodeskin");
-        string jsonText = System.IO.File.ReadAllText(jsonFilePath);
-
-        SkinData skinData = JsonUtility.FromJson<SkinData>(jsonText);
-
-        // Call the command to update the skin on the server
+        SkinData skinData = ParseAndClamp(UserContentPaths.LoadSkinJsonOrDefault());
         CmdSetSkin(skinData);
+        LoadSkin(skinData);
+    }
 
-        // Also update locally immediately (optional, depends on your needs)
+    public void LocalLoad()
+    {
+        SkinData skinData = ParseAndClamp(UserContentPaths.LoadSkinJsonOrDefault());
         LoadSkin(skinData);
     }
 
     [Command]
-    void CmdSetSkin(SkinData skindata)
+    private void CmdSetSkin(SkinData skindata)
     {
-        // These SyncVar changes will be propagated to all clients
-        body = skindata.body;
-        nose = skindata.nose;
-        mouth = skindata.mouth;
-        eye = skindata.eye;
-        hat = skindata.hat;
-    }
-    public void LocalLoad()
-    {
-        string jsonFilePath = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Skin.eggodeskin");
-        string jsonText = System.IO.File.ReadAllText(jsonFilePath);
-
-        SkinData skinData = JsonUtility.FromJson<SkinData>(jsonText);
-
-        LoadSkin(skinData);
+        body = ClampIndex(skindata.body, bodies);
+        nose = ClampIndex(skindata.nose, noses);
+        mouth = ClampIndex(skindata.mouth, mouthes);
+        eye = ClampIndex(skindata.eye, eyes);
+        hat = ClampIndex(skindata.hat, hats);
     }
 
-    /*[ClientRpc]
-    void RpcSetSkin(SkinData skindata)
+    private SkinData ParseAndClamp(string json)
     {
-        LoadSkin(skindata);
-    }*/
+        SkinData skinData = string.IsNullOrWhiteSpace(json) ? new SkinData() : JsonUtility.FromJson<SkinData>(json);
+        if (skinData == null)
+            skinData = new SkinData();
 
-    void LoadSkin(SkinData skindata)
-    {
-        foreach (var item1 in bodies)
-        {
-            item1.skin.SetActive(false);
-        }
-        bodies[skindata.body].skin.SetActive(true);
-
-        foreach (var item1 in noses)
-        {
-            item1.skin.SetActive(false);
-        }
-        noses[skindata.nose].skin.SetActive(true);
-
-        foreach (var item1 in mouthes)
-        {
-            item1.skin.SetActive(false);
-        }
-        mouthes[skindata.mouth].skin.SetActive(true);
-
-        foreach (var item1 in eyes)
-        {
-            item1.skin.SetActive(false);
-        }
-        eyes[skindata.eye].skin.SetActive(true);
-
-        foreach (var item1 in hats)
-        {
-            item1.skin.SetActive(false);
-        }
-        hats[skindata.hat].skin.SetActive(true);
+        skinData.body = ClampIndex(skinData.body, bodies);
+        skinData.nose = ClampIndex(skinData.nose, noses);
+        skinData.mouth = ClampIndex(skinData.mouth, mouthes);
+        skinData.eye = ClampIndex(skinData.eye, eyes);
+        skinData.hat = ClampIndex(skinData.hat, hats);
+        return skinData;
     }
 
-
-    void ChangeBody(int old, int neww)
+    private void ApplySyncVars()
     {
-        foreach (var item1 in bodies)
-        {
-            item1.skin.SetActive(false);
-        }
-        bodies[neww].skin.SetActive(true);
-    }
-    void ChangeNose(int old, int neww)
-    {
-        foreach (var item1 in noses)
-        {
-            item1.skin.SetActive(false);
-        }
-        noses[neww].skin.SetActive(true);
-    }
-    void ChangeMouth(int old, int neww)
-    {
-        foreach (var item1 in mouthes)
-        {
-            item1.skin.SetActive(false);
-        }
-        mouthes[neww].skin.SetActive(true);
-    }
-    void ChangeEye(int old, int neww)
-    {
-        foreach (var item1 in eyes)
-        {
-            item1.skin.SetActive(false);
-        }
-        eyes[neww].skin.SetActive(true);
+        ChangeBody(0, body);
+        ChangeNose(0, nose);
+        ChangeMouth(0, mouth);
+        ChangeEye(0, eye);
+        ChangeHat(0, hat);
     }
 
-    void ChangeHat(int old, int neww)
+    private static int ClampIndex(int value, SkinDataObjectData[] source)
     {
-        foreach (var item1 in hats)
+        if (source == null || source.Length == 0)
+            return 0;
+
+        return Mathf.Clamp(value, 0, source.Length - 1);
+    }
+
+    private void LoadSkin(SkinData skindata)
+    {
+        SetActiveOnly(bodies, skindata.body);
+        SetActiveOnly(noses, skindata.nose);
+        SetActiveOnly(mouthes, skindata.mouth);
+        SetActiveOnly(eyes, skindata.eye);
+        SetActiveOnly(hats, skindata.hat);
+    }
+
+    private void ChangeBody(int oldValue, int newValue) => SetActiveOnly(bodies, newValue);
+    private void ChangeNose(int oldValue, int newValue) => SetActiveOnly(noses, newValue);
+    private void ChangeMouth(int oldValue, int newValue) => SetActiveOnly(mouthes, newValue);
+    private void ChangeEye(int oldValue, int newValue) => SetActiveOnly(eyes, newValue);
+    private void ChangeHat(int oldValue, int newValue) => SetActiveOnly(hats, newValue);
+
+    private void SetActiveOnly(SkinDataObjectData[] array, int activeIndex)
+    {
+        if (array == null || array.Length == 0)
+            return;
+
+        int clampedIndex = Mathf.Clamp(activeIndex, 0, array.Length - 1);
+        foreach (var entry in array)
         {
-            item1.skin.SetActive(false);
+            if (entry?.skin != null)
+                entry.skin.SetActive(false);
         }
-        hats[neww].skin.SetActive(true);
+
+        if (array[clampedIndex]?.skin != null)
+            array[clampedIndex].skin.SetActive(true);
     }
 }
+
 [System.Serializable]
 public class SkinData
 {

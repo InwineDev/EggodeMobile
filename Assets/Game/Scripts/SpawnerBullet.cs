@@ -13,24 +13,25 @@ public class SpawnerBullet : NetworkBehaviour
     [Command]
     void CmdSpawn()
     {
-
         Vector3 ma = gameObject.transform.position;
         GameObject koshka = Instantiate(mama, ma, transform.rotation);
         NetworkServer.Spawn(koshka);
-        ad.Play(0);
+        if (ad != null)
+            ad.Play(0);
     }
 
     void Update()
     {
-        if (isOwned && Input.GetMouseButtonDown(0))
-        {
-            if (ktbool == false)
-            {
-                CmdSpawn();
-                StartCoroutine(kttime());
-                ktbool = true;
-            }
-        }
+    }
+
+    public void MobileLeftMouseDownAction()
+    {
+        if (!isOwned) return;
+        if (ktbool) return;
+
+        CmdSpawn();
+        StartCoroutine(kttime());
+        ktbool = true;
     }
 
     private IEnumerator kttime()
@@ -42,8 +43,6 @@ public class SpawnerBullet : NetworkBehaviour
     private void OnEnable()
     {
         if (ktbool)
-        {
             StartCoroutine(kttime());
-        }
     }
 }

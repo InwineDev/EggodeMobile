@@ -1,9 +1,5 @@
-using Steamworks;
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -11,23 +7,27 @@ public class GameStatisticController : MonoBehaviour
 {
     private void OnApplicationQuit()
     {
-        StartCoroutine(GetJsonFromAddress("Игрок покинул игру"));
+        StartCoroutine(GetJsonFromAddress("РРіСЂРѕРє РІС‹С€РµР» РёР· РёРіСЂС‹"));
     }
 
     public IEnumerator GetJsonFromAddress(string message)
     {
-        if (settingsController.sborDannie == true)
+        if (settingsController.sborDannie)
         {
-            string data = $"{message}\nSteamLogin:{SteamUser.GetSteamID().ToString()}\nSteamName:{SteamFriends.GetPersonaName()}\nGameSettings:\n{settingsController.jsonSettings}\nVersion:{menuManager.publicVersion}";
+            string data =
+                $"{message}\n" +
+                $"Login:{login.username}\n" +
+                $"GameSettings:\n{settingsController.jsonSettings}\n" +
+                $"Version:{menuManager.publicVersion}";
 
             string encodedData = Uri.EscapeDataString(data);
-
             string url = $"https://www.epicsusgames.ru/eggode2/data/sendinfo.php?moreinfo={encodedData}";
 
             UnityWebRequest request = UnityWebRequest.Get(url);
             yield return request.SendWebRequest();
 
-            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+            if (request.result == UnityWebRequest.Result.ConnectionError ||
+                request.result == UnityWebRequest.Result.ProtocolError)
             {
                 Debug.LogError("Error: " + request.error);
             }
@@ -42,8 +42,9 @@ public class GameStatisticController : MonoBehaviour
     {
         StartCoroutine(GetJsonFromAddress(what));
     }
-    void Start()
+
+    private void Start()
     {
-        StartCoroutine(GetJsonFromAddress("Игрок зашёл в меню"));
+        StartCoroutine(GetJsonFromAddress("РРіСЂРѕРє Р·Р°С€С‘Р» РІ РёРіСЂСѓ"));
     }
 }

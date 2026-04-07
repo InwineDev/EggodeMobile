@@ -21,23 +21,35 @@ public class masloController : NetworkBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F))
         {
-            if (isOwned)
-            {
-                if (ktbool == false)
-                {
-                    if(s.animka) s.animka.Play("drink");
-                    ktbool = true;
-                    Invoke("ShowEffect", 0.5f);
-                    CmdEffect();
-                    StartCoroutine(kttime());
-                    s.itemdat.RemoveItems(1);
-                    if (s.itemdat.amount <= 0)
-                    {
-                        s.usersettingitems.ChangeSkin(0);
-                    }
-                }
-            }
+            MobileFAction();
+        }
+    }
 
+    public void MobileFAction()
+    {
+        if (!isOwned)
+            return;
+
+        if (ktbool)
+            return;
+
+        if (s == null)
+            s = GetComponent<TipikalPredmet>();
+
+        if (s == null)
+            return;
+
+        if (s.animka)
+            s.animka.Play("drink");
+
+        ktbool = true;
+        Invoke("ShowEffect", 0.5f);
+        CmdEffect();
+        StartCoroutine(kttime());
+        s.itemdat.RemoveItems(1);
+        if (s.itemdat.amount <= 0)
+        {
+            s.usersettingitems.ChangeSkin(0);
         }
     }
 

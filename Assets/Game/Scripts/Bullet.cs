@@ -1,6 +1,5 @@
 using UnityEngine;
 using Mirror;
-using Unity.Burst.CompilerServices;
 using Unity.VisualScripting;
 
 public class Bullet : NetworkBehaviour
@@ -26,8 +25,8 @@ public class Bullet : NetworkBehaviour
             Health health = collision.gameObject.GetComponent<Health>();
             if (health != null)
             {
-                bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-                if (uron)
+                serverProperties props = FindObjectOfType<serverProperties>();
+                if (props != null && props.hp)
                 {
                     print("sus1");
                     health.health -= damage;
@@ -37,17 +36,19 @@ public class Bullet : NetworkBehaviour
                         health.hp.text = $"{health.health} HP";
                     }
                 }
+
                 DAMA3GE(health);
             }
         }
+
         Destroy(gameObject);
     }
 
     [Command]
     void DAMA3GE(Health sus)
     {
-        bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-        if (uron)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.hp)
         {
             print("sus1");
             sus.health -= damage;

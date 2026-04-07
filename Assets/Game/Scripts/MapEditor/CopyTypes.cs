@@ -1,9 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using System.Windows.Forms;
-
 
 public class CopyTypes : MonoBehaviour
 {
@@ -11,28 +8,31 @@ public class CopyTypes : MonoBehaviour
 
     public void Copy()
     {
-        string tocopy = "";
+        string toCopy = "";
+
         foreach (var item in inputs)
         {
-            tocopy += item.text + ".";
+            toCopy += item.text + ".";
         }
-        int x1 = tocopy.Length - 1;
-        tocopy = tocopy.Remove(x1);
-        Clipboard.SetText(tocopy);
+
+        if (toCopy.Length > 0)
+        {
+            toCopy = toCopy.Remove(toCopy.Length - 1);
+        }
+
+        GUIUtility.systemCopyBuffer = toCopy;
     }
+
     public void Paste()
     {
-        string topaste = Clipboard.GetText();
-        string[] elements = topaste.Split('.');
+        string toPaste = GUIUtility.systemCopyBuffer;
+        string[] elements = toPaste.Split('.');
+
         for (int i = 0; i < inputs.Count; i++)
         {
-            try
+            if (i < elements.Length)
             {
                 inputs[i].text = elements[i];
-            }
-            catch
-            {
-                print("MEME");
             }
         }
     }

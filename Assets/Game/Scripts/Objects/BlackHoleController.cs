@@ -12,10 +12,12 @@ public class BlackHoleController : NetworkBehaviour
     {
         myBody = GetComponent<Rigidbody>();
     }
+
     void Update()
     {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, 10f);
         affectedBodies.Clear();
+
         foreach (var item1 in hitColliders)
         {
             if (item1.TryGetComponent(out Rigidbody rigidbody))
@@ -23,12 +25,11 @@ public class BlackHoleController : NetworkBehaviour
                 affectedBodies.Add(rigidbody);
             }
         }
+
         foreach (var rigidbody in affectedBodies)
         {
             Vector3 directionHole = (transform.position - rigidbody.position).normalized;
-
             float distance = (transform.position - rigidbody.position).magnitude;
-
             float strenght = rigidbody.mass * myBody.mass / distance;
             rigidbody.AddForce(directionHole * strenght);
         }
@@ -36,7 +37,12 @@ public class BlackHoleController : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        transform.localScale = new Vector3(transform.localScale.x + 0.1f, transform.localScale.y + 0.1f, transform.localScale.z + 0.1f);
+        transform.localScale = new Vector3(
+            transform.localScale.x + 0.1f,
+            transform.localScale.y + 0.1f,
+            transform.localScale.z + 0.1f
+        );
+
         if (other.gameObject.tag != "Player")
         {
             NetworkServer.Destroy(other.gameObject);
@@ -46,11 +52,12 @@ public class BlackHoleController : NetworkBehaviour
             DAMA3GE(other.gameObject.GetComponent<Health>());
         }
     }
+
     [Command]
     void DAMA3GE(Health sus)
     {
-        bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-        if (uron)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.hp)
         {
             print("sus1");
             sus.health -= 1000 + Random.Range(0, 5);
@@ -61,6 +68,7 @@ public class BlackHoleController : NetworkBehaviour
             }
         }
     }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.cyan;

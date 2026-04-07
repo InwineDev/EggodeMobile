@@ -1,4 +1,3 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,8 +7,9 @@ public class masloGranata : GrenadeType
 {
     public float radius = 20f;
     public float force = 500f;
-
     public float speed = 10f;
+    public GameObject vfx;
+    public int damage;
 
     private void Update()
     {
@@ -20,7 +20,6 @@ public class masloGranata : GrenadeType
     {
         Explode();
     }
-    public GameObject vfx;
 
     void Explode()
     {
@@ -38,6 +37,7 @@ public class masloGranata : GrenadeType
                 }
             }
         }
+
         if (vfx != null)
         {
             GameObject vfxx = Instantiate(vfx, gameObject.transform.position, Quaternion.identity);
@@ -45,14 +45,12 @@ public class masloGranata : GrenadeType
             Destroy(gameObject);
             StartCoroutine(Pon(vfxx));
         }
-
     }
-    public int damage;
 
     void DAMA3GE(Health sus)
     {
-        bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-        if (uron)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.hp)
         {
             print("sus1");
             sus.health -= damage;

@@ -23,12 +23,16 @@ public class onofItem : NetworkBehaviour
 
     private void Update()
     {
+        if (s == null) s = GetComponent<TipikalPredmet>();
+        if (s == null || s.usersettingitems == null || s.usersettingitems.player == null) return;
         if (s.usersettingitems.player.escaped) return;
-        if (isOwned && Input.GetMouseButtonDown(0))
-        {
-            ToggleCommand();
-            if (mms) mms.PlayClip();
-        }
+    }
+
+    public void MobileLeftMouseDownAction()
+    {
+        if (!isOwned) return;
+        ToggleCommand();
+        if (mms) mms.PlayClip();
     }
 
     [Command]
@@ -41,11 +45,13 @@ public class onofItem : NetworkBehaviour
     [ClientRpc]
     private void ToggleObject(bool active)
     {
-        targetObject.SetActive(active);
+        if (targetObject != null)
+            targetObject.SetActive(active);
     }
 
     private void OnToggleChanged(bool oldValue, bool newValue)
     {
-        targetObject.SetActive(newValue);
+        if (targetObject != null)
+            targetObject.SetActive(newValue);
     }
 }

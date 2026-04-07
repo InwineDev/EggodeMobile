@@ -1,14 +1,10 @@
-using JetBrains.Annotations;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
-using static SaveMap;
 
 public class settingsController : MonoBehaviour
 {
@@ -60,6 +56,7 @@ public class settingsController : MonoBehaviour
     {
         themeChange += ChangeSavedTheme;
     }
+
     private void OnDisable()
     {
         themeChange -= ChangeSavedTheme;
@@ -67,96 +64,92 @@ public class settingsController : MonoBehaviour
 
     public void OnChangeNickname(string newNick)
     {
-        if (newNick.Length > 10)
-        {
-            nickname = newNick.Substring(0, 10);
-        }
-        else
-        {
-            nickname = newNick;
-        }
+        nickname = newNick.Length > 10 ? newNick.Substring(0, 10) : newNick;
     }
 
     public void ChangeMicro(int num)
     {
         micronum = num;
     }
+
     private void ChangeSavedTheme(int toSave)
     {
         themeChoosen = toSave;
-        choosedTheme.text = "Выбрана тема по номеру " + toSave;
+        choosedTheme.text = "Р’С‹Р±СЂР°РЅР° С‚РµРјР° РїРѕРґ РЅРѕРјРµСЂРѕРј " + toSave;
     }
+
     public void ChangeLevel(int value)
     {
         QualitySettings.SetQualityLevel(value);
         QualitySettings.renderPipeline = levelsettings[value];
         QualityLevel = value;
     }
-    /*
-        public void ChangeLevelResol(int value22)
-        {
-            Resolution[] resolutions = Screen.resolutions;
-            Resolution selectedResolution = resolutions[value22];
-            Screen.SetResolution(selectedResolution.width, selectedResolution.height, true);
-            print(Screen.currentResolution);
-        }*/
 
     private void Start()
     {
         LoadThemes();
         Load();
-        /*        Resolution[] resolutions = Screen.resolutions;
-                res.ClearOptions();
 
-                List<string> options = new List<string>();
-                foreach (Resolution res in resolutions)
-                {
-                    options.Add(res.width + "x" + res.height);
-                }
-                res.AddOptions(options);
-
-                Application.targetFrameRate = maxFPS;
-        */
         zagruzeno = 2;
         if (zagruzeno == 2)
         {
             nastroiki.SetActive(false);
         }
 
+        microphoneList.ClearOptions();
+
         if (Microphone.devices.Length == 0)
         {
-            Debug.LogError("Микрофон не найден! Подключите микрофон и перезапустите игру.");
+            Debug.LogWarning("РњРёРєСЂРѕС„РѕРЅС‹ РЅРµ РЅР°Р№РґРµРЅС‹.");
             return;
         }
+
         List<string> options = new List<string>();
         foreach (string deviceName in Microphone.devices)
         {
             options.Add(deviceName);
         }
+
         microphoneList.AddOptions(options);
     }
 
     public void LoadThemes()
     {
-        var info = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Themes"));
-        var fileInfo = info.GetFiles();
-        foreach (var item1 in themes)
+        string themesDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs", "Themes");
+
+        if (!Directory.Exists(themesDir))
         {
-            Destroy(item1);
+            Debug.LogWarning($"РџР°РїРєР° С‚РµРј РЅРµ РЅР°Р№РґРµРЅР°: {themesDir}");
+            return;
         }
+
+        DirectoryInfo info = new DirectoryInfo(themesDir);
+        FileInfo[] fileInfo = info.GetFiles();
+
+        foreach (var item in themes)
+        {
+            if (item != null)
+            {
+                Destroy(item);
+            }
+        }
+
         themes.Clear();
+
         for (int i = 0; i < fileInfo.Length; i++)
         {
-            string jsonText = System.IO.File.ReadAllText(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Themes", fileInfo[i].FullName));
-            theme Theme = JsonUtility.FromJson<theme>(jsonText);
-            GameObject s = Instantiate(prefabTheme);
-            s.transform.SetParent(content.transform, false);
+            string jsonText = File.ReadAllText(fileInfo[i].FullName);
+            theme themeData = JsonUtility.FromJson<theme>(jsonText);
+
+            GameObject s = Instantiate(prefabTheme, content.transform, false);
             ThemeInfo ti = s.GetComponent<ThemeInfo>();
-            ti.themeName = Theme.name;
+            ti.themeName = themeData.name;
             ti.themeId = i;
+
             themes.Add(s);
         }
     }
+
     public void OnChangeDannie()
     {
         sborDannie = sborDannih.isOn;
@@ -170,36 +163,34 @@ public class settingsController : MonoBehaviour
     public void OnChangeKillExitBUtton()
     {
         killExitButton = killExitButtonToggle.isOn;
+
         if (killExitButton)
-        {
             killExitButtonAction?.Invoke();
-        } else
-        {
+        else
             aliveExitButtonAction?.Invoke();
-        }
     }
 
     public void SetFPS()
     {
-        if (FPS.value == 0)
+        if ((int)FPS.value == 0)
         {
             QualitySettings.vSyncCount = 1;
-            maxFPS = (int)FPS.value;
-            FPSTXT.text = "V-Syns";
+            maxFPS = 0;
+            FPSTXT.text = "V-Sync";
         }
         else
         {
             QualitySettings.vSyncCount = 0;
-            UnityEngine.Application.targetFrameRate = (int)FPS.value;
             maxFPS = (int)FPS.value;
+            Application.targetFrameRate = maxFPS;
             FPSTXT.text = maxFPS.ToString();
         }
-
     }
+
     public void SetMUSIC()
     {
-        musicSource.volume = Mathf.Round(MUSIC.value);
-        MUSICTXT.text = Mathf.Round(MUSIC.value * 100).ToString();
+        musicSource.volume = MUSIC.value;
+        MUSICTXT.text = Mathf.RoundToInt(MUSIC.value * 100).ToString();
     }
 
     public void Save()
@@ -216,60 +207,77 @@ public class settingsController : MonoBehaviour
             nick = nickname,
             micro = micronum
         };
+
         string json = JsonUtility.ToJson(settingsDownloader, true);
 
-        File.WriteAllText(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/") + "Settings.eggodesettings", json);
+        string configDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs");
+        Directory.CreateDirectory(configDir);
+
+        string settingsPath = Path.Combine(configDir, "Settings.eggodesettings");
+        File.WriteAllText(settingsPath, json);
     }
 
     private void Load()
     {
         try
         {
-            string jsonFilePath = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Settings.eggodesettings");
-            jsonSettings = System.IO.File.ReadAllText(jsonFilePath);
+            string jsonFilePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs", "Settings.eggodesettings");
+
+            if (!File.Exists(jsonFilePath))
+                return;
+
+            jsonSettings = File.ReadAllText(jsonFilePath);
 
             SettingsDownloader settingsDownloader = JsonUtility.FromJson<SettingsDownloader>(jsonSettings);
+
             FPS.value = settingsDownloader.maxFPS;
             SetFPS();
+
             sborDannie = settingsDownloader.sborDannieBool;
             sborDannih.isOn = sborDannie;
+
             MUSIC.value = settingsDownloader.musicVolume;
             SetMUSIC();
+
             graphic.value = settingsDownloader.graphic;
+
             themeNumber = settingsDownloader.themeNumber;
             themeChange?.Invoke(themeNumber);
+
             ChangeLevel(settingsDownloader.graphic);
-            if (settingsDownloader.nick.Length > 10)
-            {
-                nickname = settingsDownloader.nick.Substring(0, 10);
-            }
-            else
-            {
-                nickname = settingsDownloader.nick;
-            }
+
+            nickname = string.IsNullOrEmpty(settingsDownloader.nick)
+                ? ""
+                : (settingsDownloader.nick.Length > 10 ? settingsDownloader.nick.Substring(0, 10) : settingsDownloader.nick);
+
             nickField.text = nickname;
+
             killExitButton = settingsDownloader.killExitButton;
             killExitButtonToggle.isOn = killExitButton;
+
             developer = settingsDownloader.developerModeBool;
             developerMode.isOn = developer;
-            if (killExitButton)
-            {
-                killExitButtonAction?.Invoke();
-            }
-            else
-            {
-                aliveExitButtonAction?.Invoke();
-            }
-            playerSkin.LocalLoad();
-            micronum = settingsDownloader.micro;
-            microphoneList.value = micronum;
-        }
-        catch
-        {
 
+            if (killExitButton)
+                killExitButtonAction?.Invoke();
+            else
+                aliveExitButtonAction?.Invoke();
+
+            playerSkin.LocalLoad();
+
+            micronum = settingsDownloader.micro;
+            if (microphoneList.options.Count > 0)
+            {
+                microphoneList.value = Mathf.Clamp(micronum, 0, microphoneList.options.Count - 1);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РЅР°СЃС‚СЂРѕРµРє: {ex}");
         }
     }
 }
+
 [System.Serializable]
 public class SettingsDownloader
 {

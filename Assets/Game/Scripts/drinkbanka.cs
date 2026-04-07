@@ -33,21 +33,34 @@ public class drinkbanka : NetworkBehaviour
                 s.usersettingitems.ChangeSkin(0);
             }
         }
+
         if (Input.GetKeyDown(KeyCode.F))
         {
-            if (isOwned)
-            {
-                if (ktbool == false)
-                {
-                    if (s.animka) s.animka.Play("drink");
-                    ktbool = true;
-                    StartCoroutine(kttime());
-                    GIVEHP(gameObject.GetComponent<TipikalPredmet>().player.GetComponent<Health>());
-                    s.itemdat.RemoveItems(1);
-                }
-            }
-
+            MobileFAction();
         }
+    }
+
+    public void MobileFAction()
+    {
+        if (!isOwned)
+            return;
+
+        if (ktbool)
+            return;
+
+        if (s == null)
+            s = GetComponent<TipikalPredmet>();
+
+        if (s == null)
+            return;
+
+        if (s.animka)
+            s.animka.Play("drink");
+
+        ktbool = true;
+        StartCoroutine(kttime());
+        GIVEHP(gameObject.GetComponent<TipikalPredmet>().player.GetComponent<Health>());
+        s.itemdat.RemoveItems(1);
     }
 
 

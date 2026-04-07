@@ -18,18 +18,22 @@ public class FlowerController : NetworkBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F))
         {
-            if (isOwned)
-            {
-                if (ktbool == false)
-                {
-                    animka.Play("drink");
-                    ktbool = true;
-                    GIVEHP();
-                    StartCoroutine(kttime());
-                }
-            }
-
+            MobileFAction();
         }
+    }
+
+    public void MobileFAction()
+    {
+        if (!isOwned)
+            return;
+
+        if (ktbool)
+            return;
+
+        animka.Play("drink");
+        ktbool = true;
+        GIVEHP();
+        StartCoroutine(kttime());
     }
 
     [Command]

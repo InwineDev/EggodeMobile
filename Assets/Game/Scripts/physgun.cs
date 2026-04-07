@@ -32,27 +32,7 @@ public class physgun : NetworkBehaviour
 
             if (Input.GetKeyDown(KeyCode.F))
             {
-                if (gRB)
-                {  
-                    CmdRemoveObj(gRB.gameObject);
-                    gRB = null;
-                }
-                else
-                {
-                        RaycastHit hit;
-                        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f));
-                        if (Physics.Raycast(ray, out hit, mgd))
-                        {
-                            if (hit.collider.gameObject.GetComponent<Rigidbody>())
-                            {
-                                gRB = hit.collider.gameObject.GetComponent<Rigidbody>();
-                                if (gRB)
-                                {
-                                    CmdGiveObj(gRB.gameObject);
-                                }
-                            }
-                        }
-                }
+                MobileFAction();
             }
             if (Input.GetKeyDown(KeyCode.G))
             {
@@ -65,6 +45,35 @@ public class physgun : NetworkBehaviour
             
         }
     }
+
+    public void MobileFAction()
+    {
+        if (!isOwned)
+            return;
+
+        if (gRB)
+        {
+            CmdRemoveObj(gRB.gameObject);
+            gRB = null;
+        }
+        else
+        {
+            RaycastHit hit;
+            Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f));
+            if (Physics.Raycast(ray, out hit, mgd))
+            {
+                if (hit.collider.gameObject.GetComponent<Rigidbody>())
+                {
+                    gRB = hit.collider.gameObject.GetComponent<Rigidbody>();
+                    if (gRB)
+                    {
+                        CmdGiveObj(gRB.gameObject);
+                    }
+                }
+            }
+        }
+    }
+
     [Command]
     void CmdRemoveObj(GameObject gRB2)
     {

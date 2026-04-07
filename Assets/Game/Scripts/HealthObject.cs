@@ -8,7 +8,6 @@ public class HealthObject : Health
 {
     public override void serialHP(int oldHp, int mewHp)
     {
-
         if (health <= 0)
         {
             GameObject cat = Instantiate(spawn, transform.position, Quaternion.identity);
@@ -26,14 +25,21 @@ public class HealthObject : Health
     [TargetRpc]
     public override void Die(GameObject spawn1)
     {
-        gameObject.transform.position = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().dieCordReally;
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null)
+        {
+            gameObject.transform.position = props.dieCordReally;
+        }
+
         userSettings s = gameObject.GetComponent<userSettingNotCam>().us;
-        if (FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().survival)
+
+        if (props != null && props.survival)
         {
             foreach (var item in s.items)
             {
                 item.GetComponent<TipikalPredmet>().itemdat.amount = 0;
-                item.GetComponent<TipikalPredmet>().itemdat.sus3.text = item.GetComponent<TipikalPredmet>().itemdat.amount.ToString() + " øòóê";
+                item.GetComponent<TipikalPredmet>().itemdat.sus3.text =
+                    item.GetComponent<TipikalPredmet>().itemdat.amount.ToString() + " ÑˆÑ‚";
             }
         }
 
@@ -42,9 +48,6 @@ public class HealthObject : Health
         CMD_ZVUK();
         hp.text = $"{health} HP";
     }
-
-
-
 
     [Command]
     public override void CMD_TEXT()
@@ -57,9 +60,9 @@ public class HealthObject : Health
     {
         source.Play(0);
     }
+
     public override void UpdateName(string oldName, string newName)
     {
         public_hp.text = newName;
     }
-
 }

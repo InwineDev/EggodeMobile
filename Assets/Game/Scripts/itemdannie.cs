@@ -1,4 +1,3 @@
-using Mirror.Examples.Common;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -33,30 +32,46 @@ public class itemdannie : NetworkBehaviour
     public Action<int> ChangeAmount;
     private void OnEnable()
     {
-        Invoke("Starting", 0.1f);
+        Invoke(nameof(Starting), 0.1f);
     }
+
     public void RemoveItems(int howMany)
     {
         amount -= howMany;
         ChangeAmount?.Invoke(howMany);
-        sus3.text = amount.ToString() + " øòóê";
+        if (sus3 != null)
+            sus3.text = amount.ToString() + " ÑˆÑ‚ÑƒÐº";
     }
+
     public void Starting()
     {
+        if (usersettingitems == null)
+            usersettingitems = FindObjectOfType<userSettings>();
+
+        if (usersettingitems == null || usersettingitems.items == null || id < 0 || id >= usersettingitems.items.Count)
+            return;
+
         if (!serverProperties.instance.survival)
-        {
             amount = 9999999;
-        }
-        //usersettingitems = FindObjectOfType<userSettings>();
-        print(usersettingitems);
-        nam1e = usersettingitems.items[id].GetComponent<SyncActive>().tpk.itemName;
-        skinimage = usersettingitems.items[id].GetComponent<SyncActive>().tpk.texture;
-        sus2.text = nam1e;
-        sus.sprite = skinimage;
-        sus3.text = amount.ToString() + " øòóê";
-        if (settingsController.developer) idText.text = "ID: " + id;
-        //if (amount <= 0) gameObject.SetActive(false);
-        //TODO: Îïòèìèçèðîâàòü àïäåéò
+
+        GameObject itemObject = usersettingitems.items[id];
+        if (itemObject == null) return;
+
+        SyncActive syncActive = itemObject.GetComponent<SyncActive>();
+        if (syncActive == null || syncActive.tpk == null) return;
+
+        nam1e = syncActive.tpk.itemName;
+        skinimage = syncActive.tpk.texture;
+
+        if (sus2 != null)
+            sus2.text = nam1e;
+        if (sus != null)
+            sus.sprite = skinimage;
+        if (sus3 != null)
+            sus3.text = amount.ToString() + " ÑˆÑ‚ÑƒÐº";
+        if (settingsController.developer && idText != null)
+            idText.text = "ID: " + id;
+
         if (amount <= 0)
         {
             usersettingitems.ChangeSkin(0);
@@ -97,6 +112,7 @@ public class itemdannie : NetworkBehaviour
 
     void SetAmountText(int oldv, int newv)
     {
-        sus3.text = newv.ToString() + " øòóê";
+        if (sus3 != null)
+            sus3.text = newv.ToString() + " ÑˆÑ‚ÑƒÐº";
     }
 }

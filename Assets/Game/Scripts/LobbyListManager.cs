@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Steamworks;
 
 public class LobbyListManager : MonoBehaviour
 {
@@ -11,13 +9,14 @@ public class LobbyListManager : MonoBehaviour
     public GameObject lobbyDataItemPrefab;
     public GameObject lobbyListContent;
 
-    public GameObject lobbiesButton, hostButton;
+    public GameObject lobbiesButton;
+    public GameObject hostButton;
 
     public List<GameObject> listOfLobbies = new List<GameObject>();
 
     private void Awake()
     {
-        if(instance == null)
+        if (instance == null)
         {
             instance = this;
         }
@@ -26,38 +25,38 @@ public class LobbyListManager : MonoBehaviour
     public void GetListOfLobbies()
     {
         lobbiesMenu.SetActive(true);
-
-        MultiplayerManager.instance.GetLobbiesList();        
+        Debug.Log("Steam lobby list removed. Use direct IP connection instead.");
     }
 
-    public void DisplayLobbies(List<CSteamID> lobbyIDs, LobbyDataUpdate_t result)
+    public void AddLobby(string lobbyName, string address)
     {
-        for(int i=0; i < lobbyIDs.Count; i++)
+        if (lobbyDataItemPrefab == null || lobbyListContent == null)
+            return;
+
+        GameObject createdItem = Instantiate(lobbyDataItemPrefab, lobbyListContent.transform);
+        createdItem.transform.localScale = Vector3.one;
+
+        LobbyData data = createdItem.GetComponent<LobbyData>();
+        if (data != null)
         {
-            if (lobbyIDs[i].m_SteamID == result.m_ulSteamIDLobby)
-            {
-                GameObject createdItem = Instantiate(lobbyDataItemPrefab);
-
-                createdItem.GetComponent<LobbyData>().lobbyID = (CSteamID)lobbyIDs[i].m_SteamID;
-
-
-                createdItem.GetComponent<LobbyData>().lobbyName = SteamMatchmaking.GetLobbyData((CSteamID)lobbyIDs[i].m_SteamID, "name");
-
-                createdItem.GetComponent<LobbyData>().SetLobbyData();
-
-                createdItem.transform.SetParent(lobbyListContent.transform);
-                createdItem.transform.localScale = Vector3.one;
-
-                listOfLobbies.Add(createdItem);
-            }
+            data.lobbyName = lobbyName;
+            data.address = address;
+            data.SetLobbyData();
         }
+
+        listOfLobbies.Add(createdItem);
     }
 
     public void DestroyLobbies()
     {
-        foreach (var item in listOfLobbies)
+        foreach (GameObject item in listOfLobbies)
         {
-            Destroy(item);
+            if (item != null)
+            {
+                Destroy(item);
+            }
         }
+
+        listOfLobbies.Clear();
     }
 }

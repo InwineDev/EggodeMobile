@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using System;
+using UnityEngine.UI;
 
 public class userSettings : NetworkBehaviour
 {
@@ -13,8 +14,6 @@ public class userSettings : NetworkBehaviour
     public GameObject item;
     public GameObject nickname;
     public GameObject canvas;
-    public KeyCode destroyKey = KeyCode.Z;
-    public KeyCode useKey = KeyCode.E;
 
     public GameObject hptxt;
     public GameObject nametxt;
@@ -53,6 +52,31 @@ public class userSettings : NetworkBehaviour
 
     [SerializeField] private GameObject ruki;
 
+    [Header("Optional Mobile UI Buttons")]
+    public Button interactButton;
+    public Button destroyButton;
+    public Button fButton;
+    public Button leftMouseButton;
+    public Button rightMouseButton;
+    public Button dropButton;
+    public Button toggleF1Button;
+    public Button nextItemButton;
+    public Button prevItemButton;
+
+    [Header("Mobile Flags")]
+    [SerializeField] private bool mobileUsePressed;
+    [SerializeField] private bool mobileDestroyPressed;
+    [SerializeField] private bool mobileDropPressed;
+    [SerializeField] private bool mobileToggleF1Pressed;
+
+    [SerializeField] private bool mobileLeftMouseDownPressed;
+    [SerializeField] private bool mobileLeftMouseHeld;
+    [SerializeField] private bool mobileLeftMouseUpPressed;
+
+    [SerializeField] private bool mobileRightMouseDownPressed;
+    [SerializeField] private bool mobileRightMouseHeld;
+    [SerializeField] private bool mobileRightMouseUpPressed;
+
     private void Awake()
     {
         if (ruki == null)
@@ -71,25 +95,35 @@ public class userSettings : NetworkBehaviour
 
     private void OnEnable()
     {
-        OnKtStart += ktController.PlayCenterAnimation;
+        if (ktController != null)
+            OnKtStart += ktController.PlayCenterAnimation;
     }
 
     private void OnDisable()
     {
-        OnKtStart -= ktController.PlayCenterAnimation;
+        if (ktController != null)
+            OnKtStart -= ktController.PlayCenterAnimation;
+
+        UnbindMobileButtons();
     }
 
     public void AddItem(int id)
     {
         AddItem(id, 1);
     }
+
     public void AddItem(int id, int amount)
     {
-        idannie[id].GetComponent<TipikalPredmet>().itemdat.amount += amount;
+        if (id < 0 || id >= idannie.Count) return;
+        if (idannie[id] == null) return;
+        if (idannie[id].itemdat == null) return;
+
+        idannie[id].itemdat.amount += amount;
     }
+
     public void OnWormChanged(int oldv, int newv)
     {
-        if (newv >= 98)
+        if (newv >= 98 && wormObject != null)
         {
             wormObject.SetActive(true);
         }
@@ -97,55 +131,63 @@ public class userSettings : NetworkBehaviour
 
     void Start()
     {
-        spawnitemmenu();
+        if (isServer)
+            spawnitemmenu();
 
         StartCoroutine(OMG());
 
         if (!isLocalPlayer)
         {
-            cam.enabled = false;
-            cam1.enabled = false;
-            canvas.SetActive(false);
-            skin.SetActive(true);
+            if (cam != null) cam.enabled = false;
+            if (cam1 != null) cam1.enabled = false;
+            if (canvas != null) canvas.SetActive(false);
+            if (skin != null) skin.SetActive(true);
         }
         else
         {
-            cam.enabled = true;
-            cam1.enabled = true;
-            SetLayerToChildren(skin, 7);
-            canvas.SetActive(true);
+            if (cam != null) cam.enabled = true;
+            if (cam1 != null) cam1.enabled = true;
+            if (skin != null) SetLayerToChildren(skin, 7);
+            if (canvas != null) canvas.SetActive(true);
             worm = UnityEngine.Random.Range(1, 50);
+
+            BindMobileButtons();
         }
     }
+
     void SetLayerToChildren(GameObject parent, int newLayer)
     {
+        if (parent == null) return;
+
         foreach (Transform child in parent.transform)
         {
             child.gameObject.layer = newLayer;
             SetLayerToChildren(child.gameObject, newLayer);
         }
     }
+
     public IEnumerator OMG()
     {
         yield return new WaitForSeconds(3f);
+
         if (isLocalPlayer)
         {
-            hptxt.SetActive(false);
-            nametxt.SetActive(false);
+            if (hptxt != null) hptxt.SetActive(false);
+            if (nametxt != null) nametxt.SetActive(false);
         }
         else
         {
-            hptxt.SetActive(true);
-            nametxt.SetActive(true);
+            if (hptxt != null) hptxt.SetActive(true);
+            if (nametxt != null) nametxt.SetActive(true);
         }
     }
 
     [ClientRpc]
-    void RpcAddItemToList(GameObject item)
+    void RpcAddItemToList(GameObject itemObj)
     {
-        if (!isServer && isLocalPlayer)
+        if (!isServer && isLocalPlayer && itemObj != null && !items.Contains(itemObj))
         {
-            items.Add(item);
+            items.Add(itemObj);
         }
     }
 
@@ -154,305 +196,405 @@ public class userSettings : NetworkBehaviour
     {
         for (int i = 0; i < itemsPrefabs.Count; i++)
         {
-            GameObject item = Instantiate(itemsPrefabs[i]);
-            NetworkServer.Spawn(item, connectionToClient);
-            item.GetComponent<NetworkIdentity>().AssignClientAuthority(connectionToClient);
+            GameObject itemObj = Instantiate(itemsPrefabs[i]);
+            NetworkServer.Spawn(itemObj, connectionToClient);
 
-            TipikalPredmet tp = item.GetComponent<SyncActive>().tpk;
+            NetworkIdentity ni = itemObj.GetComponent<NetworkIdentity>();
+            if (ni != null)
+            {
+                try
+                {
+                    ni.AssignClientAuthority(connectionToClient);
+                }
+                catch { }
+            }
+
+            SyncActive syncActive = itemObj.GetComponent<SyncActive>();
+            if (syncActive == null || syncActive.tpk == null)
+                continue;
+
+            TipikalPredmet tp = syncActive.tpk;
             tp.id = i;
             tp.usersettingitems = this;
-            tp.player = player.gameObject;
+            tp.player = player != null ? player.gameObject : null;
+
             idannie.Add(tp);
-            items.Add(item);
-            StartCoroutine(InitItem(item, i));
+            items.Add(itemObj);
+            StartCoroutine(InitItem(itemObj, i));
         }
+
         for (int i = 0; i < ModLoader.instance.objectsItems.Count; i++)
         {
             try
             {
-                GameObject item = Instantiate(ModLoader.instance.objectsItems[i].itemInArm);
-                NetworkServer.Spawn(item, connectionToClient);
-                item.GetComponent<NetworkIdentity>().AssignClientAuthority(connectionToClient);
-                int id = itemsPrefabs.Count + i;
-                TipikalPredmet tp = item.GetComponent<SyncActive>().tpk;
-                tp.id = id;
+                GameObject itemObj = Instantiate(ModLoader.instance.objectsItems[i].itemInArm);
+                NetworkServer.Spawn(itemObj, connectionToClient);
 
+                NetworkIdentity ni = itemObj.GetComponent<NetworkIdentity>();
+                if (ni != null)
+                {
+                    try
+                    {
+                        ni.AssignClientAuthority(connectionToClient);
+                    }
+                    catch { }
+                }
+
+                int id = itemsPrefabs.Count + i;
+
+                SyncActive syncActive = itemObj.GetComponent<SyncActive>();
+                if (syncActive == null || syncActive.tpk == null)
+                    continue;
+
+                TipikalPredmet tp = syncActive.tpk;
+                tp.id = id;
                 tp.usersettingitems = this;
-                tp.player = player.gameObject;
+                tp.player = player != null ? player.gameObject : null;
                 tp.spawn = ModLoader.instance.objectsItems[i].spawnedItem;
-                items.Add(item);
+
+                items.Add(itemObj);
                 idannie.Add(tp);
 
-                StartCoroutine(InitItem(item, id));
+                StartCoroutine(InitItem(itemObj, id));
             }
             catch (Exception ex)
             {
-                print(ex);
+                Debug.LogException(ex);
             }
         }
     }
 
     [Server]
-    IEnumerator InitItem(GameObject item, int index)
+    IEnumerator InitItem(GameObject itemObj, int index)
     {
         yield return new WaitForSeconds(0.1f);
 
-        item.transform.SetParent(ruki.transform);
-        item.transform.localPosition = Vector3.zero;
-        item.transform.localRotation = new Quaternion(0, 0, 0, 0);
+        if (itemObj == null || ruki == null)
+            yield break;
 
-        TipikalPredmet tp = item.GetComponent<SyncActive>().tpk;
-        tp.player = player.gameObject;
+        itemObj.transform.SetParent(ruki.transform);
+        itemObj.transform.localPosition = Vector3.zero;
+        itemObj.transform.localRotation = Quaternion.identity;
+
+        SyncActive syncActive = itemObj.GetComponent<SyncActive>();
+        if (syncActive == null || syncActive.tpk == null)
+            yield break;
+
+        TipikalPredmet tp = syncActive.tpk;
+        tp.player = player != null ? player.gameObject : null;
         tp.usersettingitems = this;
         tp.id = index;
         tp.init();
-        item.GetComponent<SyncActive>().SetActiv(index == 0);
+
+        syncActive.SetActiv(index == 0);
         currentItemIndex = 0;
-        RpcInitItem(item, index, index == 0);
+
+        RpcInitItem(itemObj, index, index == 0);
     }
 
     [ClientRpc]
-    void RpcInitItem(GameObject item, int i, bool active)
+    void RpcInitItem(GameObject itemObj, int i, bool active)
     {
         if (isServer) return;
+        if (itemObj == null) return;
+        if (ruki == null) return;
 
-        // --- Защита от крашей ---
-        if (item == null)
-        {
-            Debug.LogError($"[СЕТЬ] Предмет не успел заспавниться на клиенте. Индекс: {i}");
-            return;
-        }
+        SyncActive syncAct = itemObj.GetComponent<SyncActive>();
+        if (syncAct == null || syncAct.tpk == null) return;
 
-        if (ruki == null)
-        {
-            Debug.LogError("[UNITY] Переменная 'ruki' всё ещё пустая! Проверьте, точно ли объект называется 'Ruki' с большой буквы в иерархии.");
-            return;
-        }
-
-        SyncActive syncAct = item.GetComponent<SyncActive>();
-        if (syncAct == null) return;
-        // ------------------------
-
-        item.transform.SetParent(ruki.transform);
-        item.transform.localPosition = Vector3.zero;
+        itemObj.transform.SetParent(ruki.transform);
+        itemObj.transform.localPosition = Vector3.zero;
+        itemObj.transform.localRotation = Quaternion.identity;
 
         TipikalPredmet tp = syncAct.tpk;
         tp.usersettingitems = this;
-        tp.player = player.gameObject;
+        tp.player = player != null ? player.gameObject : null;
         tp.id = i;
         tp.init();
+
         syncAct.SetActiv(active);
+
+        if (!items.Contains(itemObj))
+            items.Add(itemObj);
     }
 
     public void ClearChest(GameObject item1)
     {
         chestItemList.Remove(item1);
-        Destroy(item1);
+        if (item1 != null)
+            Destroy(item1);
     }
+
     public void ClearAllChest()
     {
         List<GameObject> itemsToDestroy = new List<GameObject>(chestItemList);
         chestItemList.Clear();
-        foreach (var item in itemsToDestroy)
+
+        foreach (var itemObj in itemsToDestroy)
         {
-            if (item != null)
-            {
-                Destroy(item);
-            }
+            if (itemObj != null)
+                Destroy(itemObj);
         }
     }
 
     public GameObject f1;
     private int sittingNumber;
     public List<TipikalPredmet> localItems;
+
     public void StandFromVzaim()
     {
         if (!sitting) return;
+
         sitting.sittingPlayers--;
         player.transform.parent = null;
         ChangeRigidAndTrigger();
         sitting.tag = "object";
-        sitting.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+
+        NetworkIdentity ni = sitting.GetComponent<NetworkIdentity>();
+        if (ni != null && ni.connectionToClient != null)
+        {
+            try
+            {
+                ni.RemoveClientAuthority();
+            }
+            catch { }
+        }
+
         sitting = null;
     }
+
     private void Update()
     {
         if (!isLocalPlayer)
             return;
 
         if (sitting != null)
-        {
             player.transform.localPosition = sitting.sittingPosition[sittingNumber];
-        }
 
-        if (canWrite) return;
-        if (!player.escaped)
+        if (canWrite)
         {
-            float scrollWheel = Input.GetAxis("Mouse ScrollWheel");
-
-            if (scrollWheel != 0)
-            {
-                List<TipikalPredmet> availableItems = new List<TipikalPredmet>();
-                foreach (var item in idannie)
-                {
-                    if (item != null && item.itemdat != null && item.transform.parent != null)
-                    {
-                        if (item.itemdat.amount > 0)
-                            availableItems.Add(item);
-                    }
-                }
-
-                if (availableItems.Count == 0)
-                    return;
-
-                if (scrollWheel < 0)
-                {
-                    int nextIndex = -1;
-                    for (int i = 0; i < availableItems.Count; i++)
-                    {
-                        int itemIndex = items.IndexOf(availableItems[i].transform.parent.gameObject);
-                        if (itemIndex > currentItemIndex)
-                        {
-                            nextIndex = itemIndex;
-                            break;
-                        }
-                    }
-                    int fallbackIndex = items.IndexOf(availableItems[0].transform.parent.gameObject);
-                    ChangeSkin(nextIndex != -1 ? nextIndex : fallbackIndex);
-                }
-                else if (scrollWheel > 0)
-                {
-                    int prevIndex = -1;
-                    for (int i = availableItems.Count - 1; i >= 0; i--)
-                    {
-                        int itemIndex = items.IndexOf(availableItems[i].transform.parent.gameObject);
-                        if (itemIndex < currentItemIndex)
-                        {
-                            prevIndex = itemIndex;
-                            break;
-                        }
-                    }
-                    int fallbackIndex = items.IndexOf(availableItems[availableItems.Count - 1].transform.parent.gameObject);
-                    ChangeSkin(prevIndex != -1 ? prevIndex : fallbackIndex);
-                }
-            }
+            ResetMobileButtons();
+            return;
         }
-        try
+
+        if (mobileToggleF1Pressed)
+            HandleToggleF1();
+
+        if (mobileDropPressed)
+            HandleDropCurrentItem();
+
+        if (mobileDestroyPressed)
+            HandleDestroyAction();
+
+        if (mobileUsePressed)
+            HandleUseAction();
+
+        if (mobileLeftMouseDownPressed)
+            HandleLeftMouseDownAction();
+
+        if (mobileLeftMouseHeld)
+            HandleLeftMouseHoldAction();
+
+        if (mobileLeftMouseUpPressed)
+            HandleLeftMouseUpAction();
+
+        if (mobileRightMouseDownPressed)
+            HandleRightMouseDownAction();
+
+        if (mobileRightMouseHeld)
+            HandleRightMouseHoldAction();
+
+        if (mobileRightMouseUpPressed)
+            HandleRightMouseUpAction();
+
+        ResetMobileButtons();
+    }
+
+    private Camera GetUseCamera()
+    {
+        if (cam != null) return cam;
+        if (Camera.main != null) return Camera.main;
+        return null;
+    }
+
+    private void HandleToggleF1()
+    {
+        if (f1 != null)
+            f1.SetActive(!f1.activeSelf);
+    }
+
+    private void HandleDropCurrentItem()
+    {
+        if (droppedPrefab == null) return;
+        CmdDropCurrentItem(currentItemIndex, transform.position, Quaternion.identity);
+    }
+
+    private void HandleDestroyAction()
+    {
+        if (serverProperties.instance == null || !serverProperties.instance.destroy)
+            return;
+
+        Camera useCam = GetUseCamera();
+        if (useCam == null) return;
+
+        RaycastHit hit;
+        if (Physics.Raycast(useCam.transform.position, useCam.transform.forward, out hit, raycastDistance))
         {
-            foreach (var item1 in idannie)
+            GameObject hitObject = hit.collider != null ? hit.collider.gameObject : null;
+            if (hitObject != null && hitObject.CompareTag("object"))
             {
-                if (Input.GetKeyDown(item1.itemdat.bind))
-                {
-                    item1.itemdat.setitem();
-                }
+                CmdDestroyObject(hitObject);
             }
         }
-        catch
+    }
+
+    private void HandleLeftMouseDownAction()
+    {
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileLeftMouseDownAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleLeftMouseHoldAction()
+    {
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileLeftMouseHoldAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleLeftMouseUpAction()
+    {
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileLeftMouseUpAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleRightMouseDownAction()
+    {
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileRightMouseDownAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleRightMouseHoldAction()
+    {
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileRightMouseHoldAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleRightMouseUpAction()
+    {
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileRightMouseUpAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void HandleUseAction()
+    {
+        Camera useCam = GetUseCamera();
+        if (useCam == null) return;
+
+        Vector3 origin = useCam.transform.position;
+        Vector3 direction = useCam.transform.forward;
+
+        if (sitting != null)
         {
-            print("OKAY");
-        }
-        if (Input.GetKeyDown(KeyCode.F1))
-        {
-            if (f1.activeSelf)
-            {
-                f1.SetActive(false);
-            }
-            else
-            {
-                f1.SetActive(true);
-            }
+            StandFromVzaim();
+            return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Q))
+        RaycastHit hit;
+        if (Physics.Raycast(origin, direction, out hit, raycastDistance))
         {
-            GameObject dropped = Instantiate(droppedPrefab, transform.position, Quaternion.identity);
-            NetworkServer.Spawn(dropped);
-            dropped.GetComponent<DroppedObjectController>().id = currentItemIndex;
-        }
+            GameObject hitObject = hit.collider != null ? hit.collider.gameObject : null;
+            if (hitObject == null) return;
 
-        if (Input.GetKeyDown(destroyKey))
-        {
-            if (serverProperties.instance.destroy)
+            SittingController vzObject = hitObject.GetComponent<SittingController>();
+            if (vzObject != null && vzObject.sittingPlayers <= vzObject.sittingPosition.Length)
             {
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position, transform.forward, out hit, raycastDistance))
-                {
-                    GameObject hitObject = hit.collider.gameObject;
-                    if (hitObject.CompareTag("object"))
-                    {
-                        CmdDestroyObject(hitObject);
-                    }
-                }
-            }
-        }
+                sitting = vzObject;
+                sitting.tag = "Untagged";
+                player.transform.SetParent(hitObject.transform);
+                sittingNumber = vzObject.sittingPlayers;
+                player.transform.localPosition = sitting.sittingPosition[sittingNumber];
 
-        if (Input.GetKeyDown(useKey))
-        {
-            if (sitting != null)
-            {
-                StandFromVzaim();
-            }
-            else
-            {
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position, transform.forward, out hit, raycastDistance))
-                {
-                    GameObject hitObject = hit.collider.gameObject;
-                    SittingController vzObject = hitObject.GetComponent<SittingController>();
-                    if (vzObject != null && vzObject.sittingPlayers <= vzObject.sittingPosition.Length)
-                    {
-                        sitting = vzObject;
-                        sitting.tag = "Untagged";
-                        player.transform.SetParent(hitObject.transform);
-                        sittingNumber = vzObject.sittingPlayers;
-                        player.transform.localPosition = sitting.sittingPosition[sittingNumber];
-                        if (vzObject.sittingPlayers == 0) AssignSitting(sitting.GetComponent<NetworkIdentity>());
-                        vzObject.sittingPlayers++;
-                        ChangeRigidAndTrigger();
-                    }
-                    scriptor sc = hitObject.GetComponent<scriptor>();
+                if (vzObject.sittingPlayers == 0)
+                    AssignSitting(sitting.GetComponent<NetworkIdentity>());
 
-                    if (sc)
-                    {
-                        CallInteractObject(sc);
-                    }
-                }
+                vzObject.sittingPlayers++;
+                ChangeRigidAndTrigger();
+                return;
             }
-            RaycastHit hit2;
-            if (Physics.Raycast(transform.position, transform.forward, out hit2, raycastDistance))
+
+            scriptor sc = hitObject.GetComponent<scriptor>();
+            if (sc != null)
             {
-                GameObject hitObject = hit2.collider.gameObject;
-                interactable vzObject = hitObject.GetComponent<interactable>();
-                if (vzObject != null)
-                {
-                    vzObject.interact(player);
-                }
+                CallInteractObject(sc);
+            }
+
+            interactable inter = hitObject.GetComponent<interactable>();
+            if (inter != null)
+            {
+                inter.interact(player);
             }
         }
+    }
+
+    private void ResetMobileButtons()
+    {
+        mobileUsePressed = false;
+        mobileDestroyPressed = false;
+        mobileDropPressed = false;
+        mobileToggleF1Pressed = false;
+
+        mobileLeftMouseDownPressed = false;
+        mobileLeftMouseUpPressed = false;
+
+        mobileRightMouseDownPressed = false;
+        mobileRightMouseUpPressed = false;
     }
 
     [Command]
     void ChangeRigidAndTrigger()
     {
-        Rigidbody rigidbody = player.GetComponent<Rigidbody>();
-        Collider collider = player.GetComponent<Collider>();
-        rigidbody.isKinematic = !rigidbody.isKinematic;
-        collider.isTrigger = !collider.isTrigger;
+        if (player == null) return;
+
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+        Collider col = player.GetComponent<Collider>();
+
+        if (rb != null) rb.isKinematic = !rb.isKinematic;
+        if (col != null) col.isTrigger = !col.isTrigger;
     }
 
     [ClientRpc]
     void ChangeRpcRigidAndTrigger()
     {
-        Rigidbody rigidbody = player.GetComponent<Rigidbody>();
-        Collider collider = player.GetComponent<Collider>();
-        rigidbody.isKinematic = !rigidbody.isKinematic;
-        collider.isTrigger = !collider.isTrigger;
+        if (player == null) return;
+
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+        Collider col = player.GetComponent<Collider>();
+
+        if (rb != null) rb.isKinematic = !rb.isKinematic;
+        if (col != null) col.isTrigger = !col.isTrigger;
     }
 
     [Command]
     void AssignSitting(NetworkIdentity neti)
     {
-        neti.AssignClientAuthority(connectionToClient);
+        if (neti == null) return;
+
+        try
+        {
+            neti.AssignClientAuthority(connectionToClient);
+        }
+        catch { }
     }
 
     [Command]
@@ -464,31 +606,31 @@ public class userSettings : NetworkBehaviour
     [ClientRpc]
     void CallInteractOnClients(scriptor s)
     {
-        if (!isOwned) return;
+        if (!isOwned || s == null) return;
+
         if (s.type == 1)
-        {
             s.typeController(Player228);
-        }
     }
+
     public void OnEnterNpc()
     {
-        player.escaped = false;
-        npcOkno[0].SetActive(false);
+        if (player != null)
+            player.escaped = false;
+
+        if (npcOkno != null && npcOkno.Length > 0 && npcOkno[0] != null)
+            npcOkno[0].SetActive(false);
     }
 
     void IDEM1(SittingController o, SittingController d)
     {
-        print("RPC");
         RPCSUS(d);
     }
 
     [TargetRpc]
     void RPCSUS(SittingController d)
     {
-        if (d != null)
-        {
+        if (d != null && Player228 != null)
             Player228.transform.parent = d.transform;
-        }
     }
 
     [SyncVar]
@@ -499,13 +641,26 @@ public class userSettings : NetworkBehaviour
     [Command]
     void CmdDestroyObject(GameObject objToDestroy)
     {
+        if (objToDestroy == null) return;
         NetworkServer.Destroy(objToDestroy);
+    }
+
+    [Command]
+    void CmdDropCurrentItem(int itemIndex, Vector3 spawnPos, Quaternion spawnRot)
+    {
+        if (droppedPrefab == null) return;
+
+        GameObject dropped = Instantiate(droppedPrefab, spawnPos, spawnRot);
+        DroppedObjectController droppedCtrl = dropped.GetComponent<DroppedObjectController>();
+        if (droppedCtrl != null)
+            droppedCtrl.id = itemIndex;
+
+        NetworkServer.Spawn(dropped);
     }
 
     [Command]
     void CmdSpawnKoshka(int prefabToSpawn, Vector3 hit)
     {
-        print(prefabToSpawn);
         if (prefabToSpawn != 0)
         {
             GameObject koshka = Instantiate(item228[prefabToSpawn], hit, Quaternion.identity);
@@ -521,23 +676,33 @@ public class userSettings : NetworkBehaviour
     public Sprite[] s;
     public AudioSource changeItem;
     public MultiMusicSystem punchAudio;
+
     public void ChangeSkin(int newSkinIndex)
     {
-        if (items[newSkinIndex].GetComponent<SyncActive>().tpk.itemdat.amount <= 0 & newSkinIndex != 0) return;
+        if (newSkinIndex < 0 || newSkinIndex >= items.Count) return;
+        if (items[newSkinIndex] == null) return;
+
+        SyncActive syncActive = items[newSkinIndex].GetComponent<SyncActive>();
+        if (syncActive == null || syncActive.tpk == null || syncActive.tpk.itemdat == null) return;
+
+        if (syncActive.tpk.itemdat.amount <= 0 && newSkinIndex != 0) return;
+
         CmdChangeSkin(newSkinIndex);
         OnChangeItem?.Invoke(newSkinIndex);
     }
 
     public void PunchPlay()
     {
-        punchAudio.PlayClip();
+        if (punchAudio != null)
+            punchAudio.PlayClip();
     }
 
     [Command]
     private void CmdChangeSkin(int newSkinIndex)
     {
         currentItemIndex = newSkinIndex;
-        changeItem.Play(0);
+        if (changeItem != null)
+            changeItem.Play(0);
     }
 
     void OnInvChanged(int oldIndex, int newIndex)
@@ -552,7 +717,10 @@ public class userSettings : NetworkBehaviour
             bool active = (i == index);
             if (items[i] != null)
             {
-                items[i].GetComponent<SyncActive>().SetActiv(active);
+                SyncActive sa = items[i].GetComponent<SyncActive>();
+                if (sa != null)
+                    sa.SetActiv(active);
+
                 RpcSetItemActive(items[i], active);
             }
         }
@@ -561,20 +729,278 @@ public class userSettings : NetworkBehaviour
     [Command]
     public void CmdActivateObject(GameObject syncIfStrah)
     {
+        if (syncIfStrah == null) return;
+
         syncIfStrah.SetActive(true);
-        if (syncIfStrah) NetworkServer.Spawn(syncIfStrah);
+        NetworkServer.Spawn(syncIfStrah);
     }
 
     [ClientRpc]
-    void RpcSetItemActive(GameObject item, bool active)
+    void RpcSetItemActive(GameObject itemObj, bool active)
     {
-        if (item != null)
-            item.GetComponent<SyncActive>().SetActiv(active);
+        if (itemObj != null)
+        {
+            SyncActive sa = itemObj.GetComponent<SyncActive>();
+            if (sa != null)
+                sa.SetActiv(active);
+        }
     }
 
     [Command]
     void CmdChangeItem(int newIndex)
     {
         currentItemIndex = newIndex;
+    }
+
+    private List<int> GetAvailableItemIndexes()
+    {
+        List<int> availableIndexes = new List<int>();
+
+        foreach (var itemObj in idannie)
+        {
+            if (itemObj != null && itemObj.itemdat != null && itemObj.transform.parent != null)
+            {
+                if (itemObj.itemdat.amount > 0)
+                {
+                    int idx = items.IndexOf(itemObj.transform.parent.gameObject);
+                    if (idx >= 0)
+                        availableIndexes.Add(idx);
+                }
+            }
+        }
+
+        availableIndexes.Sort();
+        return availableIndexes;
+    }
+
+    public void MobileNextItem()
+    {
+        if (!isLocalPlayer) return;
+
+        List<int> availableIndexes = GetAvailableItemIndexes();
+        if (availableIndexes.Count == 0) return;
+
+        int nextIndex = -1;
+        for (int i = 0; i < availableIndexes.Count; i++)
+        {
+            if (availableIndexes[i] > currentItemIndex)
+            {
+                nextIndex = availableIndexes[i];
+                break;
+            }
+        }
+
+        if (nextIndex == -1)
+            nextIndex = availableIndexes[0];
+
+        ChangeSkin(nextIndex);
+    }
+
+    public void MobilePrevItem()
+    {
+        if (!isLocalPlayer) return;
+
+        List<int> availableIndexes = GetAvailableItemIndexes();
+        if (availableIndexes.Count == 0) return;
+
+        int prevIndex = -1;
+        for (int i = availableIndexes.Count - 1; i >= 0; i--)
+        {
+            if (availableIndexes[i] < currentItemIndex)
+            {
+                prevIndex = availableIndexes[i];
+                break;
+            }
+        }
+
+        if (prevIndex == -1)
+            prevIndex = availableIndexes[availableIndexes.Count - 1];
+
+        ChangeSkin(prevIndex);
+    }
+
+    public void MobileInteract()
+    {
+        if (!isLocalPlayer) return;
+        mobileUsePressed = true;
+    }
+
+    public void MobileDestroy()
+    {
+        if (!isLocalPlayer) return;
+        mobileDestroyPressed = true;
+    }
+
+    public void MobileDropCurrentItem()
+    {
+        if (!isLocalPlayer) return;
+        mobileDropPressed = true;
+    }
+
+    public void MobileToggleF1()
+    {
+        if (!isLocalPlayer) return;
+        mobileToggleF1Pressed = true;
+    }
+
+    public void MobileUseDirect()
+    {
+        if (!isLocalPlayer) return;
+        HandleUseAction();
+    }
+
+    public void MobileDestroyDirect()
+    {
+        if (!isLocalPlayer) return;
+        HandleDestroyAction();
+    }
+
+    public void MobileFDirect()
+    {
+        if (!isLocalPlayer) return;
+
+        if (currentItemIndex < 0 || currentItemIndex >= items.Count) return;
+        if (items[currentItemIndex] == null) return;
+
+        items[currentItemIndex].BroadcastMessage("MobileFAction", SendMessageOptions.DontRequireReceiver);
+    }
+
+    public void MobileLeftMouseDirect()
+    {
+        if (!isLocalPlayer) return;
+        HandleLeftMouseDownAction();
+    }
+
+    public void MobileLeftMousePointerDown()
+    {
+        if (!isLocalPlayer) return;
+        mobileLeftMouseHeld = true;
+        mobileLeftMouseDownPressed = true;
+    }
+
+    public void MobileLeftMousePointerUp()
+    {
+        if (!isLocalPlayer) return;
+        mobileLeftMouseHeld = false;
+        mobileLeftMouseUpPressed = true;
+    }
+
+    public void MobileRightMouseDirect()
+    {
+        if (!isLocalPlayer) return;
+        HandleRightMouseDownAction();
+    }
+
+    public void MobileRightMousePointerDown()
+    {
+        if (!isLocalPlayer) return;
+        mobileRightMouseHeld = true;
+        mobileRightMouseDownPressed = true;
+    }
+
+    public void MobileRightMousePointerUp()
+    {
+        if (!isLocalPlayer) return;
+        mobileRightMouseHeld = false;
+        mobileRightMouseUpPressed = true;
+    }
+
+    public void MobileDropDirect()
+    {
+        if (!isLocalPlayer) return;
+        HandleDropCurrentItem();
+    }
+
+    public void MobileToggleF1Direct()
+    {
+        if (!isLocalPlayer) return;
+        HandleToggleF1();
+    }
+
+    private void BindMobileButtons()
+    {
+        if (interactButton != null)
+        {
+            interactButton.onClick.RemoveListener(MobileUseDirect);
+            interactButton.onClick.AddListener(MobileUseDirect);
+        }
+
+        if (destroyButton != null)
+        {
+            destroyButton.onClick.RemoveListener(MobileDestroyDirect);
+            destroyButton.onClick.AddListener(MobileDestroyDirect);
+        }
+
+        if (fButton != null)
+        {
+            fButton.onClick.RemoveListener(MobileFDirect);
+            fButton.onClick.AddListener(MobileFDirect);
+        }
+
+        if (leftMouseButton != null)
+        {
+            leftMouseButton.onClick.RemoveListener(MobileLeftMouseDirect);
+            leftMouseButton.onClick.AddListener(MobileLeftMouseDirect);
+        }
+
+        if (rightMouseButton != null)
+        {
+            rightMouseButton.onClick.RemoveListener(MobileRightMouseDirect);
+            rightMouseButton.onClick.AddListener(MobileRightMouseDirect);
+        }
+
+        if (dropButton != null)
+        {
+            dropButton.onClick.RemoveListener(MobileDropDirect);
+            dropButton.onClick.AddListener(MobileDropDirect);
+        }
+
+        if (toggleF1Button != null)
+        {
+            toggleF1Button.onClick.RemoveListener(MobileToggleF1Direct);
+            toggleF1Button.onClick.AddListener(MobileToggleF1Direct);
+        }
+
+        if (nextItemButton != null)
+        {
+            nextItemButton.onClick.RemoveListener(MobileNextItem);
+            nextItemButton.onClick.AddListener(MobileNextItem);
+        }
+
+        if (prevItemButton != null)
+        {
+            prevItemButton.onClick.RemoveListener(MobilePrevItem);
+            prevItemButton.onClick.AddListener(MobilePrevItem);
+        }
+    }
+
+    private void UnbindMobileButtons()
+    {
+        if (interactButton != null)
+            interactButton.onClick.RemoveListener(MobileUseDirect);
+
+        if (destroyButton != null)
+            destroyButton.onClick.RemoveListener(MobileDestroyDirect);
+
+        if (fButton != null)
+            fButton.onClick.RemoveListener(MobileFDirect);
+
+        if (leftMouseButton != null)
+            leftMouseButton.onClick.RemoveListener(MobileLeftMouseDirect);
+
+        if (rightMouseButton != null)
+            rightMouseButton.onClick.RemoveListener(MobileRightMouseDirect);
+
+        if (dropButton != null)
+            dropButton.onClick.RemoveListener(MobileDropDirect);
+
+        if (toggleF1Button != null)
+            toggleF1Button.onClick.RemoveListener(MobileToggleF1Direct);
+
+        if (nextItemButton != null)
+            nextItemButton.onClick.RemoveListener(MobileNextItem);
+
+        if (prevItemButton != null)
+            prevItemButton.onClick.RemoveListener(MobilePrevItem);
     }
 }

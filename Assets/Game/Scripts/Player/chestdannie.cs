@@ -1,4 +1,3 @@
-using Mirror.Examples.Common;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -36,7 +35,7 @@ public class chestdannie : NetworkBehaviour
         skinimage = usersettingitems.items[id].GetComponent<TipikalPredmet>().texture;
         sus2.text = nam1e;
         sus.sprite = skinimage;
-        sus3.text = amount.ToString() + " штук";
+        sus3.text = amount.ToString() + " пїЅпїЅпїЅпїЅ";
         if(amount <= 0)
         {
             usersettingitems.ClearChest(gameObject);
@@ -44,8 +43,8 @@ public class chestdannie : NetworkBehaviour
     }
     private void UpdateUI(int oldAmount, int newAmount)
     {
-        // Ваш сложный UI-метод
-        sus3.text = newAmount.ToString() + " штук";
+        // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ UI-пїЅпїЅпїЅпїЅпїЅ
+        sus3.text = newAmount.ToString() + " пїЅпїЅпїЅпїЅ";
 
         if (isServer && newAmount <= 0)
         {
@@ -74,6 +73,6 @@ public class chestdannie : NetworkBehaviour
     }*/
     void SetAmountText(int oldv, int newv)
     {
-        sus3.text = newv.ToString() + " штук";
+        sus3.text = newv.ToString() + " пїЅпїЅпїЅпїЅ";
     }
 }

@@ -24,26 +24,19 @@ public class GrapplingGun : NetworkBehaviour
     private void OnEnable()
     {
         line = GetComponent<LineRenderer>();
-        camera = Camera.main.transform;
-        me = GetComponent<TipikalPredmet>().player;
+        if (Camera.main != null)
+            camera = Camera.main.transform;
+        s = GetComponent<TipikalPredmet>();
+        if (s != null)
+            me = s.player;
     }
 
     private void Update()
     {
         if (!isOwned) return;
+        if (s == null) s = GetComponent<TipikalPredmet>();
+        if (s == null || s.usersettingitems == null || s.usersettingitems.player == null) return;
         if (s.usersettingitems.player.escaped) return;
-        if (Input.GetMouseButtonDown(0))
-        {
-            StartGrapple();
-        } else if (Input.GetMouseButtonUp(0))
-        {
-            s.itemdat.RemoveItems(1);
-            if (s.itemdat.amount <= 0)
-            {
-                s.usersettingitems.ChangeSkin(0);
-            }
-            StopGrapple();
-        }
     }
 
     private void LateUpdate()
@@ -51,8 +44,36 @@ public class GrapplingGun : NetworkBehaviour
         DrawRope();
     }
 
+    public void MobileLeftMouseDownAction()
+    {
+        if (!isOwned) return;
+        StartGrapple();
+    }
+
+    public void MobileLeftMouseUpAction()
+    {
+        if (!isOwned) return;
+        if (s == null || s.itemdat == null || s.usersettingitems == null) return;
+
+        s.itemdat.RemoveItems(1);
+        if (s.itemdat.amount <= 0)
+            s.usersettingitems.ChangeSkin(0);
+
+        StopGrapple();
+    }
+
     void StartGrapple()
     {
+        if (camera == null)
+        {
+            if (Camera.main == null) return;
+            camera = Camera.main.transform;
+        }
+
+        if (me == null && s != null)
+            me = s.player;
+        if (me == null) return;
+
         RaycastHit hit;
         if(Physics.Raycast(camera.position, camera.forward, out hit, maxDistance))
         {
@@ -62,18 +83,15 @@ public class GrapplingGun : NetworkBehaviour
             sprintJoint.autoConfigureConnectedAnchor = false;
             sprintJoint.connectedAnchor = grapplePoint;
 
-            //float dfp = Vector3.Distance(me.transform.position, grapplePoint);
-
             sprintJoint.maxDistance = 4f;
             sprintJoint.minDistance = 4f;
 
-            sprintJoint.spring = 4.5f;
             sprintJoint.spring = 19f;
-            sprintJoint.damper = 7f;
             sprintJoint.damper = 15f;
             sprintJoint.massScale = 4.5f;
 
-            line.positionCount = 2;
+            if (line != null)
+                line.positionCount = 2;
 
             CMDGrapple(hit.point);
         }
@@ -82,7 +100,8 @@ public class GrapplingGun : NetworkBehaviour
    [Command]
     void CMDGrapple(Vector3 hit)
     {
-        line.positionCount = 2;
+        if (line != null)
+            line.positionCount = 2;
         grapplePoint = hit;
         RPCGrapple(hit);
     }
@@ -96,35 +115,40 @@ public class GrapplingGun : NetworkBehaviour
     [ClientRpc]
     void RPCGrapple(Vector3 hit)
     {
-        line.positionCount = 2;
+        if (line != null)
+            line.positionCount = 2;
         grapplePoint = hit;
     }
 
     void StopGrapple()
     {
-        Destroy(sprintJoint);
+        if (sprintJoint != null)
+            Destroy(sprintJoint);
         isGrappling = false;
-        line.positionCount = 0;
+        if (line != null)
+            line.positionCount = 0;
         CMDSTOPGrapple();
     }
 
     [Command]
     void CMDSTOPGrapple()
     {
-        line.positionCount = 0;
+        if (line != null)
+            line.positionCount = 0;
         RPCSTOPGrapple();
     }
 
     [ClientRpc]
     void RPCSTOPGrapple()
     {
-        line.positionCount = 0;
+        if (line != null)
+            line.positionCount = 0;
     }
 
 
     void DrawRope()
     {
-        if (!sprintJoint) return;
+        if (!sprintJoint || line == null || gunTip == null) return;
 
         line.SetPosition(0, gunTip.position);
         line.SetPosition(1, grapplePoint);
@@ -134,6 +158,7 @@ public class GrapplingGun : NetworkBehaviour
     [Command]
     void CMDDrawRope(Vector3 guntip, Vector3 gp)
     {
+        if (line == null) return;
         line.SetPosition(0, guntip);
         line.SetPosition(1, gp);
         RPCDrawRope(guntip, gp);
@@ -142,6 +167,7 @@ public class GrapplingGun : NetworkBehaviour
     [ClientRpc]
     void RPCDrawRope(Vector3 guntip, Vector3 gp)
     {
+        if (line == null) return;
         line.SetPosition(0, guntip);
         line.SetPosition(1, gp);
     }

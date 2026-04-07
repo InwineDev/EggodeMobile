@@ -1,56 +1,74 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DiscordManager : MonoBehaviour
 {
-
-    Discord.Discord discord;
     private string name24;
-    private string gde = "Ìåíþ";
+    private string gde = "ÐœÐµÐ½ÑŽ";
     public long time;
 
-    void Start()
+#if !UNITY_ANDROID && !UNITY_IOS && DISCORD_SDK
+    private Discord.Discord discord;
+#endif
+
+    private void Start()
     {
-        discord = new Discord.Discord(1215401955057213552, (ulong)Discord.CreateFlags.NoRequireDiscord);
-        name = login.username;
+        name24 = login.username;
         time = DateTimeOffset.Now.ToUnixTimeSeconds();
-        ChangeActivity();
+
+#if !UNITY_ANDROID && !UNITY_IOS && DISCORD_SDK
+        try
+        {
+            discord = new Discord.Discord(1215401955057213552, (ulong)Discord.CreateFlags.NoRequireDiscord);
+            ChangeActivity();
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("Discord SDK init failed: " + ex.Message);
+        }
+#else
+        Debug.Log("Discord Rich Presence disabled on this platform/build.");
+#endif
     }
 
     private void OnDisable()
     {
-        discord.Dispose();
+#if !UNITY_ANDROID && !UNITY_IOS && DISCORD_SDK
+        if (discord != null)
+        {
+            discord.Dispose();
+            discord = null;
+        }
+#endif
     }
 
     public void ChangeActivity()
     {
-        string state = settingsController.nickname + " ÄÅËÀÅÒ Æ¨ÑÒÊÈß ßÉÖÀ";
+#if !UNITY_ANDROID && !UNITY_IOS && DISCORD_SDK
+        if (discord == null)
+            return;
+
+        string state = settingsController.nickname + " Ð´ÐµÐ»Ð°ÐµÑ‚ Ñ„Ð¸Ñ‡Ð¸ ÑÐ¹Ñ†Ð°";
         var activityManager = discord.GetActivityManager();
         var activity = new Discord.Activity
         {
             State = state,
-        Details = gde,
-        Assets =
-        {
-        LargeImage = "logo",
-        LargeText = gde,
-        SmallImage = "logo",
-        SmallText = name24
-        },
-        Timestamps =
-        {
-
-         Start = time
-        }
+            Details = gde,
+            Assets =
+            {
+                LargeImage = "logo",
+                LargeText = gde,
+                SmallImage = "logo",
+                SmallText = string.IsNullOrEmpty(name24) ? login.username : name24
+            },
+            Timestamps =
+            {
+                Start = time
+            }
         };
-        activityManager.UpdateActivity(activity, (res) =>
-        {
-            print("ACTIVITY UPDATED!");
-        });
+        activityManager.UpdateActivity(activity, res => Debug.Log("ACTIVITY UPDATED!"));
+#endif
     }
-
 
     public void buton(string newprichina)
     {
@@ -58,8 +76,11 @@ public class DiscordManager : MonoBehaviour
         ChangeActivity();
     }
 
-    void Update()
+    private void Update()
     {
-        discord.RunCallbacks();
+#if !UNITY_ANDROID && !UNITY_IOS && DISCORD_SDK
+        if (discord != null)
+            discord.RunCallbacks();
+#endif
     }
 }

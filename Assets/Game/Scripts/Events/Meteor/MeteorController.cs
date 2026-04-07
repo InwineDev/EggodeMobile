@@ -11,6 +11,7 @@ public class MeteorController : NetworkBehaviour
 
     public int damage;
     public GameObject effect;
+
     private void OnCollisionEnter(Collision collision)
     {
         Explode();
@@ -32,6 +33,7 @@ public class MeteorController : NetworkBehaviour
                 }
             }
         }
+
         if (effect != null)
         {
             GameObject vfxx = Instantiate(effect, gameObject.transform.position, Quaternion.identity);
@@ -39,13 +41,12 @@ public class MeteorController : NetworkBehaviour
             Destroy(gameObject);
             StartCoroutine(Pon(vfxx));
         }
-
     }
 
     void DAMA3GE(Health sus)
     {
-        bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-        if (uron)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.hp)
         {
             print("sus1");
             sus.health -= damage;

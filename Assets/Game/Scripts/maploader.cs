@@ -2,12 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using Mirror;
 using System;
-using Mirror.Experimental;
-using System.IO;
-using System.Collections;
 using UnityEngine.SceneManagement;
-using System.Linq;
-using UnityEngine.Rendering;
+using System.IO;
 
 [System.Serializable]
 public class MapData
@@ -21,7 +17,6 @@ public class MapData
     public bool canSpawnObj = true;
     public bool canDellObj = true;
     public bool survival;
-    public List<string> modsDependence;
     public List<TextureData> textures;
     public List<MapObject> objects;
     public List<NPCData> npc;
@@ -105,313 +100,257 @@ public class maploader : NetworkBehaviour
 {
     public string jsonFilePath;
     public GameObject[] slider;
-    
-    void Start()
+
+    private void Start()
     {
         if (!isOwned) return;
-            if (gameObject.name == "FirstPersonController [connId=0]" )
+
+        if (gameObject.name == "FirstPersonController [connId=0]")
+        {
+            load();
+        }
+        else
+        {
+            if (SceneManager.GetActiveScene().buildIndex == 2)
             {
-                load();
-            }
-            else
-            {
-                if (SceneManager.GetActiveScene().buildIndex == 2)
+                GameStatisticController stat = FindObjectOfType<GameStatisticController>();
+                if (stat != null)
+                    stat.buttonEvent("Р—Р°С€С‘Р» РІ РёРіСЂСѓ");
+
+                serverProperties sp = FindObjectOfType<serverProperties>();
+                userSettingNotCam user = GetComponent<userSettingNotCam>();
+
+                if (sp != null && sp.versionServer != menuManager.publicVersion)
                 {
-                    print("SHIT" + SceneManager.GetActiveScene().buildIndex);
-                    FindObjectOfType<GameStatisticController>().buttonEvent("Зашёл к кому-то в игру");
-                if(FindObjectOfType<serverProperties>().versionServer != menuManager.publicVersion)
-                {
-                    EError.error = "Версия несовместима. Версия сервера: " + FindObjectOfType<serverProperties>().versionServer + " Версия клиента " + menuManager.publicVersion;
-                    GetComponent<userSettingNotCam>().StopGame();
+                    EError.error = "Р’РµСЂСЃРёСЏ РЅРµ СЃРѕРІРїР°РґР°РµС‚. Р’РµСЂСЃРёСЏ СЃРµСЂРІРµСЂР°: " +
+                                   sp.versionServer +
+                                   " Р’РµСЂСЃРёСЏ РєР»РёРµРЅС‚Р°: " + menuManager.publicVersion;
+
+                    if (user != null)
+                        user.StopGame();
                 }
-                if (FindObjectOfType<serverProperties>().serverMods.All(CsModsManager.modsForServer.Contains) & FindObjectOfType<serverProperties>().serverMods != null)
+                else
                 {
-                    Destroy(gameObject.GetComponent<maploader>());
-                } else
-                {
-                    EError.error = "У вас не установлены все требуемые моды";
-                    GetComponent<userSettingNotCam>().StopGame();
-                }
-                } else
-                {
-                    print("EEEE");
+                    Destroy(GetComponent<maploader>());
                 }
             }
+        }
     }
 
-
     [TargetRpc]
-    virtual public void load()
+    public virtual void load()
     {
-        print("sus zagruzena karta by " + gameObject);
-        jsonFilePath = login.urlMap;
-        if (jsonFilePath == null) return;
-        string jsonText = System.IO.File.ReadAllText(jsonFilePath);
+        Debug.Log("load map by " + gameObject);
 
-        MapData mapData = JsonUtility.FromJson<MapData>(jsonText);
-        FindObjectOfType<serverProperties>().survival = mapData.survival;
-        FindObjectOfType<serverProperties>().versionServer = menuManager.publicVersion;
-        FindObjectOfType<GameStatisticController>().buttonEvent("Хостит карту " + mapData.mapname);
+        string jsonText = null;
+        jsonFilePath = login.urlMap;
+
         try
         {
-            foreach (var item1 in mapData.modsDependence)
+            if (!string.IsNullOrEmpty(SelectedMapState.EmbeddedMapJson))
             {
-                FindObjectOfType<serverProperties>().serverMods.Add(item1);
+                jsonText = SelectedMapState.EmbeddedMapJson;
+            }
+            else if (!string.IsNullOrEmpty(SelectedMapState.PersistentMapPath) && File.Exists(SelectedMapState.PersistentMapPath))
+            {
+                jsonFilePath = SelectedMapState.PersistentMapPath;
+                jsonText = File.ReadAllText(SelectedMapState.PersistentMapPath);
+            }
+            else if (!string.IsNullOrEmpty(jsonFilePath) && File.Exists(jsonFilePath))
+            {
+                jsonText = File.ReadAllText(jsonFilePath);
+            }
+            else if (!string.IsNullOrEmpty(SelectedMapState.ResourcesMapPath))
+            {
+                TextAsset mapAsset = Resources.Load<TextAsset>(SelectedMapState.ResourcesMapPath);
+                if (mapAsset != null)
+                    jsonText = mapAsset.text;
             }
         }
-        catch (NullReferenceException ex)
+        catch (Exception ex)
         {
-            Debug.Log(ex.Message);
+            Debug.LogError("Failed to read map json: " + ex.Message);
+            return;
         }
-        if (Int32.TryParse(mapData.skybox, out int skyboxValue))
+
+        if (string.IsNullOrWhiteSpace(jsonText))
         {
-            FindObjectOfType<serverProperties>().skybox = skyboxValue;
+            Debug.LogError("Map json is empty or missing.");
+            return;
         }
+
+        MapData mapData;
+        try
+        {
+            mapData = JsonUtility.FromJson<MapData>(jsonText);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError("Failed to parse map json: " + ex.Message);
+            Debug.LogError("Map json preview: " + jsonText.Substring(0, Mathf.Min(jsonText.Length, 300)));
+            return;
+        }
+
+        if (mapData == null) return;
+
+        serverProperties sp = FindObjectOfType<serverProperties>();
+        if (sp == null) return;
+
+        sp.survival = mapData.survival;
+        sp.versionServer = menuManager.publicVersion;
+
+        GameStatisticController stat = FindObjectOfType<GameStatisticController>();
+        if (stat != null)
+            stat.buttonEvent("Р—Р°РіСЂСѓР¶РµРЅР° РєР°СЂС‚Р° " + mapData.mapname);
+
+        if (int.TryParse(mapData.skybox, out int skyboxValue))
+            sp.skybox = skyboxValue;
         else
-        {
-            Debug.LogError("Не удалось преобразовать skybox в целое число.");
-        }
+            Debug.LogError("РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРµРѕР±СЂР°Р·РѕРІР°С‚СЊ skybox РІ С‡РёСЃР»Рѕ.");
 
-        if (String.IsNullOrEmpty(mapData.diecord))
-        {
-            FindObjectOfType<serverProperties>().dieCord = "0,2,0";
-        }
-        else
-        {
-            FindObjectOfType<serverProperties>().dieCord = mapData.diecord;
-        }
-
-        FindObjectOfType<serverProperties>().hp = mapData.uron;
-
-        FindObjectOfType<serverProperties>().spawnn = mapData.canSpawnObj;
-
-        FindObjectOfType<serverProperties>().destroy = mapData.canDellObj;
+        sp.dieCord = string.IsNullOrEmpty(mapData.diecord) ? "0,2,0" : mapData.diecord;
+        sp.hp = mapData.uron;
+        sp.spawnn = mapData.canSpawnObj;
+        sp.destroy = mapData.canDellObj;
 
         StrahLoad(mapData);
     }
-    GameObject loadBundle(string path)
-    {
-        foreach (GameObject item in FindObjectOfType<ModLoader>().objectsMapEditor) 
-        {
-            if (item.GetComponent<name24>().name244 == path)
-            {
-                return item;
-            }
-        }
-        return null;
-    }
 
-    virtual public void StrahLoad(MapData mapData)
+    public virtual void StrahLoad(MapData mapData)
     {
-/*        foreach (var item in mapData.textures)
-        {
-            
-        }*/
+        if (mapData == null || mapData.objects == null)
+            return;
+
         foreach (MapObject mapObject in mapData.objects)
         {
             GameObject prefab = Resources.Load<GameObject>(mapObject.folderLocation);
-            print(mapObject.folderLocation);
-            if (loadBundle(mapObject.folderLocation) != null)
+            Debug.Log(mapObject.folderLocation);
+
+            if (prefab == null)
+                continue;
+
+            GameObject obj = Instantiate(prefab, mapObject.position, Quaternion.Euler(mapObject.rotation));
+            obj.transform.localScale = mapObject.scale;
+
+            if (SceneManager.GetActiveScene().buildIndex == 2)
             {
-                prefab = loadBundle(mapObject.folderLocation);
-            }
-
-            if (prefab != null)
-            {
-                GameObject obj = Instantiate(prefab, mapObject.position, Quaternion.Euler(mapObject.rotation));
-                obj.transform.localScale = mapObject.scale;
-                if (SceneManager.GetActiveScene().buildIndex == 2)
-                {
-                    NetworkServer.Spawn(obj);
-                }
-                else
-                {
-                    Destroy(obj.GetComponent<NetworkIdentity>());
-                    Destroy(obj.GetComponent<Rigidbody>());
-                    obj.transform.parent = slider[0].transform;
-                    
-                }
-                obj.GetComponent<name24>().sugoma224 = mapObject.color;
-                obj.GetComponent<name24>().isLomatel = mapObject.isLomatel;
-                try
-                {
-                    serverProperties.instance.allBlocks.Add(obj.GetComponent<name24>());
-                }
-                catch
-                {
-
-                }
-                if (mapObject.isObject)
-                {
-                    obj.tag = "object";
-                }
-                if (mapObject.texture != null)
-                {
-                                        if (mapObject.texture.Contains("eggodetexture//"))
-                                        {
-                                            foreach (var item in mapData.textures)
-                                            {
-                                                if (mapObject.texture != "eggodetexture//" + item.nameoftexture) break;
-                                                byte[] pvrtcBytes = item.bytes;
-                            foreach (byte b in pvrtcBytes)
-                            {
-                                obj.GetComponent<name24>().bytesForTexture.Add(b);
-                            }
-
-                            obj.GetComponent<name24>().texture = mapObject.texture;
-                        }
-                                        }
-                                        else
-                                        {
-                                            obj.GetComponent<name24>().texture = mapObject.texture;
-                                        }
-                }
-                if(mapObject.textureTile != null) obj.GetComponent<name24>().textureTile = mapObject.textureTile;
-                if (mapObject.isCollider)
-                {
-                    obj.GetComponent<name24>().isCollider = mapObject.isCollider;
-                }
-                if (mapObject.isRigidbody)
-                {
-                    obj.GetComponent<name24>().isRigidbody = mapObject.isRigidbody;
-                }
-                else
-                {
-                    Destroy(obj.GetComponent<NetworkRigidbodyReliable>());
-                    Destroy(obj.GetComponent<NetworkRigidbodyUnreliable>());
-                    Destroy(gameObject.GetComponent<NetworkRigidbody>());
-                }
-                obj.GetComponent<scriptor>().type = mapObject.type;
-                if (mapObject.TpCord != null & mapObject.TpCord != "")
-                {
-                    obj.GetComponent<scriptor>().TpCord = mapObject.TpCord;
-                }
-                if (mapObject.id != null & mapObject.id != "")
-                {
-                    obj.GetComponent<name24>().id = mapObject.id;
-                }
-                if (mapObject.Animation != null & mapObject.Animation != "")
-                {
-                    obj.GetComponent<scriptor>().Animation = mapObject.Animation;
-                }
-                if (mapObject.Destroy != null & mapObject.Destroy != "")
-                {
-                    obj.GetComponent<scriptor>().Destroy = mapObject.Destroy;
-                }
-                if (mapObject.Damagenum != null & mapObject.Damagenum != "")
-                {
-                    obj.GetComponent<scriptor>().Damagenum = mapObject.Damagenum;
-                }
-                if (mapObject.Speed != null & mapObject.Speed != "")
-                {
-                    obj.GetComponent<scriptor>().Speed = mapObject.Speed;
-                }
-                if (mapObject.SetSize != null & mapObject.SetSize != "")
-                {
-                    obj.GetComponent<scriptor>().SetSize = mapObject.SetSize;
-                }
-                if (mapObject.Jump != null & mapObject.Jump != "")
-                {
-                    obj.GetComponent<scriptor>().Jump = mapObject.Jump;
-                }
-                if (mapObject.PlayAnim != null & mapObject.PlayAnim != "")
-                {
-                    obj.GetComponent<scriptor>().PlayAnim = mapObject.PlayAnim;
-                }
-                if (mapObject.II)
-                {
-                    obj.GetComponent<scriptor>().II = mapObject.II;
-                }
-                obj.GetComponent<scriptor>().SetPlayerVarible = mapObject.SetPlayerVarible;
-                obj.GetComponent<scriptor>().SetIntPlayerVarible = mapObject.SetIntPlayerVarible;
-                obj.GetComponent<scriptor>().PlayerVaribleIf = mapObject.PlayerVaribleIf;
-                obj.GetComponent<scriptor>().PlayerVaribleIfMoreInt = mapObject.PlayerVaribleIfMoreInt;
-                obj.GetComponent<scriptor>().AddItem = mapObject.AddItem;
-                obj.GetComponent<scriptor>().nodesCode = mapObject.node;
-                MetodMods(obj);
-            }
-
-        }
-/*
-        foreach (NPCData mapObject in mapData.npc)
-        {
-            GameObject prefab = Resources.Load<GameObject>(mapObject.folderLocation);
-
-            if (prefab != null)
-            {
-                GameObject obj = Instantiate(prefab, mapObject.position, Quaternion.Euler(mapObject.rotation));
-                obj.transform.localScale = mapObject.scale;
                 NetworkServer.Spawn(obj);
-                obj.GetComponent<name24>().sugoma224 = mapObject.color;
-                if (mapObject.isObject)
+            }
+            else
+            {
+                NetworkIdentity ni = obj.GetComponent<NetworkIdentity>();
+                if (ni != null) Destroy(ni);
+
+                Rigidbody rb = obj.GetComponent<Rigidbody>();
+                if (rb != null) Destroy(rb);
+
+                if (slider != null && slider.Length > 0 && slider[0] != null)
+                    obj.transform.parent = slider[0].transform;
+            }
+
+            name24 name24Comp = obj.GetComponent<name24>();
+            scriptor scriptorComp = obj.GetComponent<scriptor>();
+
+            if (name24Comp == null || scriptorComp == null)
+                continue;
+
+            name24Comp.sugoma224 = mapObject.color;
+            name24Comp.isLomatel = mapObject.isLomatel;
+
+            try
+            {
+                if (serverProperties.instance != null)
+                    serverProperties.instance.allBlocks.Add(name24Comp);
+            }
+            catch
+            {
+            }
+
+            if (mapObject.isObject)
+                obj.tag = "object";
+
+            if (!string.IsNullOrEmpty(mapObject.texture))
+            {
+                if (mapObject.texture.Contains("eggodetexture//") && mapData.textures != null)
                 {
-                    obj.tag = "object";
-                }
-                if (mapObject.texture != null)
-                {
-                    obj.GetComponent<name24>().texture = mapObject.texture;
-                }
-                if (mapObject.isCollider)
-                {
-                    obj.GetComponent<name24>().isCollider = mapObject.isCollider;
-                }
-                if (mapObject.isRigidbody)
-                {
-                    obj.GetComponent<name24>().isRigidbody = mapObject.isRigidbody;
+                    foreach (TextureData item in mapData.textures)
+                    {
+                        if (mapObject.texture != "eggodetexture//" + item.nameoftexture)
+                            continue;
+
+                        if (item.bytes != null)
+                        {
+                            foreach (byte b in item.bytes)
+                                name24Comp.bytesForTexture.Add(b);
+                        }
+
+                        name24Comp.texture = mapObject.texture;
+                        break;
+                    }
                 }
                 else
                 {
-                    Destroy(obj.GetComponent<NetworkRigidbodyReliable>());
-                    Destroy(obj.GetComponent<NetworkRigidbodyUnreliable>());
+                    name24Comp.texture = mapObject.texture;
                 }
-                if (mapObject.TpCord != null & mapObject.TpCord != "")
-                {
-                    obj.GetComponent<scriptor>().TpCord = mapObject.TpCord;
-                }
-                if (mapObject.id != null & mapObject.id != "")
-                {
-                    obj.GetComponent<name24>().id = mapObject.id;
-                }
-                if (mapObject.Animation != null & mapObject.Animation != "")
-                {
-                    obj.GetComponent<scriptor>().Animation = mapObject.Animation;
-                }
-                if (mapObject.Destroy != null & mapObject.Destroy != "")
-                {
-                    obj.GetComponent<scriptor>().Destroy = mapObject.Destroy;
-                }
-                if (mapObject.Damagenum != null & mapObject.Damagenum != "")
-                {
-                    obj.GetComponent<scriptor>().Damagenum = mapObject.Damagenum;
-                }
-                if (mapObject.Speed != null & mapObject.Speed != "")
-                {
-                    obj.GetComponent<scriptor>().Speed = mapObject.Speed;
-                }
-                if (mapObject.SetSize != null & mapObject.SetSize != "")
-                {
-                    obj.GetComponent<scriptor>().SetSize = mapObject.SetSize;
-                }
-                if (mapObject.PlayAnim != null & mapObject.PlayAnim != "")
-                {
-                    obj.GetComponent<scriptor>().PlayAnim = mapObject.PlayAnim;
-                }
-                if (mapObject.II)
-                {
-                    obj.GetComponent<scriptor>().II = mapObject.II;
-                }
-                if (!String.IsNullOrEmpty(mapObject.npcslovo))
-                {
-                    obj.GetComponent<npcController>().npcReplics = mapObject.npcslovo;
-                }
-                obj.GetComponent<scriptor>().SetPlayerVarible = mapObject.SetPlayerVarible;
-                obj.GetComponent<scriptor>().PlayerVaribleIf = mapObject.PlayerVaribleIf;
             }
-        }*/
-    }
 
-    virtual public void MetodMods(GameObject obj)
-    {
+            if (!string.IsNullOrEmpty(mapObject.textureTile))
+                name24Comp.textureTile = mapObject.textureTile;
 
+            if (mapObject.isCollider)
+                name24Comp.isCollider = mapObject.isCollider;
+
+            if (mapObject.isRigidbody)
+            {
+                name24Comp.isRigidbody = mapObject.isRigidbody;
+            }
+            else
+            {
+                NetworkRigidbodyReliable nrr = obj.GetComponent<NetworkRigidbodyReliable>();
+                if (nrr != null) Destroy(nrr);
+
+                NetworkRigidbodyUnreliable nru = obj.GetComponent<NetworkRigidbodyUnreliable>();
+                if (nru != null) Destroy(nru);
+            }
+
+            scriptorComp.type = mapObject.type;
+
+            if (!string.IsNullOrEmpty(mapObject.TpCord))
+                scriptorComp.TpCord = mapObject.TpCord;
+
+            if (!string.IsNullOrEmpty(mapObject.id))
+                name24Comp.id = mapObject.id;
+
+            if (!string.IsNullOrEmpty(mapObject.Animation))
+                scriptorComp.Animation = mapObject.Animation;
+
+            if (!string.IsNullOrEmpty(mapObject.Destroy))
+                scriptorComp.Destroy = mapObject.Destroy;
+
+            if (!string.IsNullOrEmpty(mapObject.Damagenum))
+                scriptorComp.Damagenum = mapObject.Damagenum;
+
+            if (!string.IsNullOrEmpty(mapObject.Speed))
+                scriptorComp.Speed = mapObject.Speed;
+
+            if (!string.IsNullOrEmpty(mapObject.SetSize))
+                scriptorComp.SetSize = mapObject.SetSize;
+
+            if (!string.IsNullOrEmpty(mapObject.Jump))
+                scriptorComp.Jump = mapObject.Jump;
+
+            if (!string.IsNullOrEmpty(mapObject.PlayAnim))
+                scriptorComp.PlayAnim = mapObject.PlayAnim;
+
+            if (mapObject.II)
+                scriptorComp.II = mapObject.II;
+
+            scriptorComp.SetPlayerVarible = mapObject.SetPlayerVarible;
+            scriptorComp.SetIntPlayerVarible = mapObject.SetIntPlayerVarible;
+            scriptorComp.PlayerVaribleIf = mapObject.PlayerVaribleIf;
+            scriptorComp.PlayerVaribleIfMoreInt = mapObject.PlayerVaribleIfMoreInt;
+            scriptorComp.AddItem = mapObject.AddItem;
+            scriptorComp.nodesCode = mapObject.node;
+        }
     }
 }

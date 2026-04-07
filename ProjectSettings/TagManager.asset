@@ -6,6 +6,15 @@ TagManager:
   tags:
   - object
   - Gizmo
+  - InteractButton
+  - SpawnButton
+  - Joystick
+  - SprintButton
+  - ThrowButton
+  - FireButton
+  - EatButton
+  - DeleteButton
+  - JumpButton
   layers:
   - Default
   - TransparentFX

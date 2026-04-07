@@ -26,8 +26,8 @@ public class Health : NetworkBehaviour
     [Command]
     public void DAMA3GE(int damage)
     {
-        bool uron = FindFirstObjectByType<serverProperties>().GetComponent<serverProperties>().hp;
-        if (uron)
+        serverProperties props = FindObjectOfType<serverProperties>();
+        if (props != null && props.hp)
         {
             print("sus1");
             health -= damage + UnityEngine.Random.Range(0, 5);
@@ -38,14 +38,17 @@ public class Health : NetworkBehaviour
             }
         }
     }
+
     public virtual void serialHP(int oldHp, int mewHp)
     {
         hp.text = $"{health} HP";
+
         if (oldHp > mewHp)
         {
             blood.SetActive(true);
             StartCoroutine(blooding());
         }
+
         CMD_TEXT();
 
         if (health <= 0)
@@ -67,12 +70,14 @@ public class Health : NetworkBehaviour
     {
         gameObject.transform.position = serverProperties.instance.dieCordReally;
         userSettings s = gameObject.GetComponent<userSettingNotCam>().us;
+
         if (serverProperties.instance.survival)
         {
             foreach (var item in s.items)
             {
                 item.GetComponent<SyncActive>().tpk.itemdat.amount = 0;
-                item.GetComponent<SyncActive>().tpk.itemdat.sus3.text = item.GetComponent<TipikalPredmet>().itemdat.amount.ToString() + " øòóê";
+                item.GetComponent<SyncActive>().tpk.itemdat.sus3.text =
+                    item.GetComponent<TipikalPredmet>().itemdat.amount.ToString() + " ÑˆÑ‚";
             }
         }
 
@@ -81,9 +86,6 @@ public class Health : NetworkBehaviour
         CMD_ZVUK();
         hp.text = $"{health} HP";
     }
-
-
-
 
     [Command]
     public virtual void CMD_TEXT()
@@ -103,9 +105,9 @@ public class Health : NetworkBehaviour
         source.clip = dieSound;
         source.Play(0);
     }
+
     public virtual void UpdateName(string oldName, string newName)
     {
         public_hp.text = newName;
     }
-
 }

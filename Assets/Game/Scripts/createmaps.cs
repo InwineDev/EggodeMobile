@@ -1,30 +1,46 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.IO;
-using Mirror;
 
 public class createmaps : MonoBehaviour
 {
-    public string[] path;
     public GameObject prefabik;
     public GameObject slider;
 
-    void Start()
+    private void Start()
     {
-        path = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(Application.dataPath), "maps"), "*.eggodemap", SearchOption.AllDirectories);
-        print(path);
-        create();
+        CreateFromPersistentStorage();
+        CreateFromResources();
     }
 
-    public void create()
+    private void CreateFromPersistentStorage()
     {
-        foreach (string path in path)
+        foreach (string path in UserContentPaths.EnumeratePersistentMapFiles())
         {
-            GameObject obj = Instantiate(prefabik, new Vector3(0,0,0), Quaternion.identity);
-            obj.transform.parent = slider.transform;
-            obj.GetComponent<mapdannie>().jsonFilePath = path;
-            obj.GetComponent<mapdannie>().Starting();
+            CreateCard(path, null, null);
         }
+    }
+
+    private void CreateFromResources()
+    {
+        foreach (TextAsset mapJson in UserContentPaths.LoadBuiltInMapAssets())
+        {
+            if (mapJson == null)
+                continue;
+
+            string resourcePath = UserContentPaths.ResolveResourceMapPath(mapJson.name);
+            CreateCard(null, resourcePath, mapJson.text);
+        }
+    }
+
+    private void CreateCard(string persistentPath, string resourcePath, string embeddedJson)
+    {
+        GameObject obj = Instantiate(prefabik, Vector3.zero, Quaternion.identity);
+        obj.transform.SetParent(slider.transform, false);
+
+        mapdannie card = obj.GetComponent<mapdannie>();
+        card.jsonFilePath = persistentPath;
+        card.resourceMapPath = resourcePath;
+        card.embeddedJson = embeddedJson;
+        card.Starting();
     }
 }

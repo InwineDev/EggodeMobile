@@ -28,31 +28,40 @@ public class ItemPicker : NetworkBehaviour
 
             if (Input.GetKeyDown(KeyCode.F))
             {
-                if (gRB)
+                MobileFAction();
+            }
+        }
+    }
+
+    public void MobileFAction()
+    {
+        if (!isOwned)
+            return;
+
+        if (gRB)
+        {
+            CmdRemoveObj(gRB.gameObject);
+            gRB = null;
+        }
+        else
+        {
+            RaycastHit hit;
+            Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f));
+            if (Physics.Raycast(ray, out hit, mgd))
+            {
+                if (hit.collider.gameObject.GetComponent<Rigidbody>() & hit.collider.gameObject.tag == "object")
                 {
-                    CmdRemoveObj(gRB.gameObject);
-                    gRB = null;
-                }
-                else
-                {
-                    RaycastHit hit;
-                    Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f));
-                    if (Physics.Raycast(ray, out hit, mgd))
+                    gRB = hit.collider.gameObject.GetComponent<Rigidbody>();
+                    if (gRB)
                     {
-                        if (hit.collider.gameObject.GetComponent<Rigidbody>() & hit.collider.gameObject.tag == "object")
-                        {
-                            gRB = hit.collider.gameObject.GetComponent<Rigidbody>();
-                            if (gRB)
-                            {
-                                gRB.GetComponent<Collider>().isTrigger = true;
-                                CmdGiveObj(gRB.gameObject);
-                            }
-                        }
+                        gRB.GetComponent<Collider>().isTrigger = true;
+                        CmdGiveObj(gRB.gameObject);
                     }
                 }
             }
         }
     }
+
     [Command]
     void CmdRemoveObj(GameObject gRB2)
     {
@@ -61,7 +70,7 @@ public class ItemPicker : NetworkBehaviour
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         Vector3 targetPosition = GetRaycastHitPoint(ray, mgd, gRB2.transform);
 
-        // Запускаем корутину на клиенте через RPC
+        // Г‡Г ГЇГіГ±ГЄГ ГҐГ¬ ГЄГ®Г°ГіГІГЁГ­Гі Г­Г  ГЄГ«ГЁГҐГ­ГІГҐ Г·ГҐГ°ГҐГ§ RPC
         RPCMoveObjSmoothly(gRB2, targetPosition);
     }
 
@@ -83,10 +92,10 @@ public class ItemPicker : NetworkBehaviour
             yield return null;
         }
 
-        // Финализируем позицию
+        // Г”ГЁГ­Г Г«ГЁГ§ГЁГ°ГіГҐГ¬ ГЇГ®Г§ГЁГ¶ГЁГѕ
         obj.transform.position = targetPos;
         yield return new WaitForSeconds(0.1f);
-        // Вызываем оригинальный RPC
+        // Г‚Г»Г§Г»ГўГ ГҐГ¬ Г®Г°ГЁГЈГЁГ­Г Г«ГјГ­Г»Г© RPC
         RPCRemoveObj(obj);
     }
 
