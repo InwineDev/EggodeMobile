@@ -12,6 +12,7 @@ public class MobileLookArea : MonoBehaviour, IPointerDownHandler, IDragHandler, 
     private int activePointerId = int.MinValue;
     private Vector2 lastPosition;
     private bool isDragging;
+    private bool receivedDragThisFrame;
 
     public void OnPointerDown(PointerEventData eventData)
     {
@@ -37,6 +38,7 @@ public class MobileLookArea : MonoBehaviour, IPointerDownHandler, IDragHandler, 
             delta.y = -delta.y;
 
         lookDelta = delta * sensitivity;
+        receivedDragThisFrame = true;
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -47,11 +49,14 @@ public class MobileLookArea : MonoBehaviour, IPointerDownHandler, IDragHandler, 
         activePointerId = int.MinValue;
         lookDelta = Vector2.zero;
         isDragging = false;
+        receivedDragThisFrame = false;
     }
 
     private void LateUpdate()
     {
-        if (!isDragging)
+        if (!isDragging || !receivedDragThisFrame)
             lookDelta = Vector2.zero;
+
+        receivedDragThisFrame = false;
     }
 }

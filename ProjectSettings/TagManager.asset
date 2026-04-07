@@ -15,6 +15,7 @@ TagManager:
   - EatButton
   - DeleteButton
   - JumpButton
+  - ReleaseGrappleButton
   layers:
   - Default
   - TransparentFX

@@ -8,10 +8,12 @@ public class ItemLoaderLobby : MonoBehaviour
 {
     [SerializeField] private string[] path;
     public List<GameObject> objects = new List<GameObject>();
+    public bool IsLoaded { get; private set; }
     private static bool strah;
 
     private void Start()
     {
+        IsLoaded = false;
         Debug.Log(strah);
 
         string customItemsDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "customItems");
@@ -19,6 +21,7 @@ public class ItemLoaderLobby : MonoBehaviour
         if (!Directory.Exists(customItemsDir))
         {
             Debug.LogWarning($"Папка не найдена: {customItemsDir}");
+            IsLoaded = true;
             return;
         }
 
@@ -87,11 +90,11 @@ public class ItemLoaderLobby : MonoBehaviour
                 {
                     networkManager.spawnPrefabs.Add(item);
                 }
-
-                Instantiate(item);
             }
 
             assetBundle.Unload(false);
         }
+
+        IsLoaded = true;
     }
 }
