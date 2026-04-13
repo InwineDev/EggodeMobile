@@ -47,13 +47,18 @@ newMono/
 
 # Билды и их пугающие вариации 💀
 БИЛД/
+build/
 БИЛД БЕЗ МУСОРА/
 БИЛД ДЛЯ ПОДПИСОТ/
 БИЛД СТРАХА/
 билд новая ера яиц я вшоке как такое может бити/
 ещё борлее новая ера билдове/
 NEW BUILD/
+dsfsdf/
 last build/
+Eggode_BurstDebugInformation_DoNotShip/
+buildy/
+
 
 # Локальные моды, тесты и кастомные предметы (чтобы члены не улетели в сеть)
 AssetBundles/
@@ -76,8 +81,10 @@ mapsmooooooooooooooods testa/
 *.eggodemap.meta
 
 # Разное
+Eggode.apk
 .vsconfig
 .erp
+ModularFirstPersonController/
 
 # =========================================================
 

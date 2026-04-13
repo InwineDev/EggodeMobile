@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -37,52 +39,27 @@ public class ThemeData : MonoBehaviour
         settingsController.themeChange -= ChangeTheme;
     }
 
-    public void ChangeTheme(int themeIndex)
+    public void ChangeTheme(int theme)
     {
-        if (themeIndex >= 0 && themeIndex < allThemes.Count)
-        {
-            selectedTheme = allThemes[themeIndex];
-        }
+        selectedTheme = allThemes[theme];
     }
 
-    private void Awake()
+    void Awake()
     {
         me = this;
-        Load();
+        load();
     }
 
-    public void Load()
+    public void load()
     {
-        allThemes.Clear();
-
-        string themesDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs", "Themes");
-
-        if (!Directory.Exists(themesDir))
-        {
-            Debug.LogWarning($"Папка тем не найдена: {themesDir}");
-            return;
-        }
-
-        DirectoryInfo info = new DirectoryInfo(themesDir);
-        FileInfo[] fileInfo = info.GetFiles();
-
+        var info = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Themes"));
+        var fileInfo = info.GetFiles();
         foreach (var item in fileInfo)
         {
-            string jsonText = File.ReadAllText(item.FullName);
-            theme loadedTheme = JsonUtility.FromJson<theme>(jsonText);
-
-            allThemes.Add(new theme(
-                loadedTheme.name,
-                loadedTheme.author,
-                loadedTheme.textColor,
-                loadedTheme.backgroundColor,
-                loadedTheme.color
-            ));
+            string jsonText = System.IO.File.ReadAllText(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Themes", item.FullName));
+            theme Theme = JsonUtility.FromJson<theme>(jsonText);
+            allThemes.Add(new theme(Theme.name, Theme.author, Theme.textColor, Theme.backgroundColor, Theme.color));
         }
-
-        if (allThemes.Count > 0)
-        {
-            selectedTheme = allThemes[0];
-        }
+        selectedTheme = allThemes[0];
     }
 }

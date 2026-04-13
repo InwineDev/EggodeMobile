@@ -2992,7 +2992,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.00039249283, y: -0.00024414062}
+  m_AnchoredPosition: {x: -0.00039249283, y: -0.00018310547}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1322433446103986157
@@ -3459,7 +3459,7 @@ RectTransform:
   m_Father: {fileID: 8816051186083207685}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -4807,7 +4807,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 3704826501559358159}
         m_TargetAssemblyTypeName: userSettings, Assembly-CSharp
-        m_MethodName: MobileDeleteObjectDirect
+        m_MethodName: DestroyButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8187,7 +8187,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1831173671862915072}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 3704826501559358159}
+        m_TargetAssemblyTypeName: userSettings, Assembly-CSharp
+        m_MethodName: OnSpawnButtonPressed
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &3534770815769669664
 GameObject:
   m_ObjectHideFlags: 0
@@ -8350,6 +8362,7 @@ GameObject:
   - component: {fileID: 9085348367879257828}
   - component: {fileID: 4006735662424559793}
   - component: {fileID: 7553565682711616791}
+  - component: {fileID: 4766593033534470212}
   m_Layer: 0
   m_Name: MobileControls
   m_TagString: Untagged
@@ -8452,6 +8465,21 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &4766593033534470212
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3669682444436811826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb5c02b58522f584c8e7f1369f9ee07d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1 &3669764944231259852
 GameObject:
   m_ObjectHideFlags: 0
@@ -9272,7 +9300,7 @@ GameObject:
   - component: {fileID: 866856598638914766}
   - component: {fileID: 7067675999376228766}
   - component: {fileID: 2549642979100679033}
-  - component: {fileID: 3557238672485804989}
+  - component: {fileID: 6276128026781564995}
   m_Layer: 0
   m_Name: Image
   m_TagString: Untagged
@@ -9337,7 +9365,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &3557238672485804989
+--- !u!114 &6276128026781564995
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -9350,8 +9378,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lookDelta: {x: 0, y: 0}
-  sensitivity: 2
-  invertY: 0
 --- !u!1 &4013647953791474797
 GameObject:
   m_ObjectHideFlags: 0
@@ -10657,21 +10683,14 @@ MonoBehaviour:
   playerCamera: {fileID: 4459864851310106426}
   fov: 60
   invertCamera: 0
-  canvasi:
-  - {fileID: 9085646073070469831}
-  - {fileID: 3205352265102263944}
-  - {fileID: 81324292827534934}
   cameraCanMove: 1
-  mouseSensitivity: 2
+  lookSensitivity: 0.05
   maxLookAngle: 90
-  lockCursor: 0
   crosshair: 1
   crosshairImage: {fileID: 21300000, guid: be4ce60e2c9768c44b9b10b9c5258045, type: 3}
   crosshairColor: {r: 1, g: 1, b: 1, a: 1}
   crosshairObject: {fileID: 4459864850190357395}
   enableZoom: 1
-  holdToZoom: 1
-  zoomKey: 99
   zoomFOV: 15
   zoomStepTime: 5
   playerCanMove: 1
@@ -10679,7 +10698,6 @@ MonoBehaviour:
   maxVelocityChange: 10
   enableSprint: 1
   unlimitedSprint: 1
-  sprintKey: 304
   sprintSpeed: 7
   sprintDuration: 5
   sprintCooldown: 0.5
@@ -10692,12 +10710,10 @@ MonoBehaviour:
   sprintBarWidthPercent: 0.3
   sprintBarHeightPercent: 0.02
   enableJump: 1
-  jumpKey: 32
   jumpPower: 5
   isGrounded: 0
   enableCrouch: 0
   holdToCrouch: 1
-  crouchKey: 306
   crouchHeight: 0.75
   speedReduction: 0.5
   enableHeadBob: 1
@@ -10716,20 +10732,19 @@ MonoBehaviour:
   footstepVolume: 0.5
   crouchFootstepVolumeMultiplier: 0.5
   animations: {fileID: 6745732651175452529}
-  enableMobileControls: 1
-  autoEnableMobileOnHandheld: 1
-  forceMobileInEditor: 1
-  moveJoystick: {fileID: 7229097548066063155}
-  mobileControlsRoot: {fileID: 3669682444436811826}
-  mobileLookArea: {fileID: 3557238672485804989}
-  useMobileLookArea: 1
-  mobileLookMultiplier: 0.05
+  moveJoystickObject: {fileID: 7229097548066063153}
+  mobileLookArea: {fileID: 6276128026781564995}
+  mobileLookMultiplier: 1
+  joystickDeadZone: 0.15
+  canvasi:
+  - {fileID: 9085646073070469831}
+  - {fileID: 3205352265102263944}
+  - {fileID: 81324292827534934}
   caPSULE: {fileID: 0}
   canvaser: {fileID: 0}
   canvasermama: {fileID: 0}
   nick: {fileID: 0}
   canvasnaya: {fileID: 0}
-  destroyKey: 27
   escaped: 0
   us: {fileID: 3704826501559358159}
   waterVolume: {fileID: 2945351228059409952}
@@ -11298,6 +11313,8 @@ MonoBehaviour:
   item: {fileID: 8209491898806309621, guid: 921b7462db0bb1c498c19717f3ded5e3, type: 3}
   nickname: {fileID: 5690575132725457581}
   canvas: {fileID: 3035879572700807247}
+  destroyKey: 122
+  useKey: 101
   hptxt: {fileID: 7535989660331447143}
   nametxt: {fileID: 6658445170281238585}
   item228:
@@ -11323,25 +11340,6 @@ MonoBehaviour:
   droppedPrefab: {fileID: 7227325376511742310, guid: e5c638824eaa6cc45aa80e091ab55717,
     type: 3}
   ruki: {fileID: 1488940031637341393}
-  interactButton: {fileID: 0}
-  destroyButton: {fileID: 0}
-  fButton: {fileID: 0}
-  leftMouseButton: {fileID: 0}
-  rightMouseButton: {fileID: 0}
-  dropButton: {fileID: 0}
-  toggleF1Button: {fileID: 0}
-  nextItemButton: {fileID: 0}
-  prevItemButton: {fileID: 0}
-  mobileUsePressed: 0
-  mobileDestroyPressed: 0
-  mobileDropPressed: 0
-  mobileToggleF1Pressed: 0
-  mobileLeftMouseDownPressed: 0
-  mobileLeftMouseHeld: 0
-  mobileLeftMouseUpPressed: 0
-  mobileRightMouseDownPressed: 0
-  mobileRightMouseHeld: 0
-  mobileRightMouseUpPressed: 0
   f1: {fileID: 3035879572700807247}
   localItems: []
   sitting: {fileID: 0}
@@ -18876,7 +18874,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7566846877378174361}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 445c4f4e51320854d8ab7e51ebcd770c, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a7926d611f11b148a4f307289df3cde, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   targetCanvas: {fileID: 81324292827534934}
@@ -25520,7 +25518,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8415949187400857387
 RectTransform:
   m_ObjectHideFlags: 0
@@ -25622,7 +25620,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 7139200117782347451}
   m_HandleRect: {fileID: 1597401803331190776}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -25839,7 +25837,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 4459864850019384740}
         m_TargetAssemblyTypeName: FirstPersonController, Assembly-CSharp
-        m_MethodName: MobileJump
+        m_MethodName: JumpButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -26347,7 +26345,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 4459864850019384740}
         m_TargetAssemblyTypeName: FirstPersonController, Assembly-CSharp
-        m_MethodName: MobileSprintToggle
+        m_MethodName: SprintButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -33192,12 +33190,12 @@ PrefabInstance:
     - target: {fileID: 3881087803549984436, guid: ec536a7718376554185e4a856d5ae230,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 815.7113
+      value: 739.13
       objectReference: {fileID: 0}
     - target: {fileID: 3881087803549984436, guid: ec536a7718376554185e4a856d5ae230,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 628.0249
+      value: 649.32
       objectReference: {fileID: 0}
     - target: {fileID: 3881087803549984436, guid: ec536a7718376554185e4a856d5ae230,
         type: 3}
@@ -33367,18 +33365,12 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 5876789733544338820}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7229097548066063155 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3881087803549984439, guid: ec536a7718376554185e4a856d5ae230,
+--- !u!1 &7229097548066063153 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3881087803549984437, guid: ec536a7718376554185e4a856d5ae230,
     type: 3}
   m_PrefabInstance: {fileID: 5876789733544338820}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 42844a4fccbd54746b90cade4ff70f73, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &5990454892324031999
 PrefabInstance:
   m_ObjectHideFlags: 0

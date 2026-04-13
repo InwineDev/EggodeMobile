@@ -38,22 +38,10 @@ public class login : MonoBehaviour
     public TMP_Text nicknametxt;
 
     public menuManager menMan;
+
     public TMP_Text versiontxt;
+
     public TMP_Text errortxt;
-    public TMP_Text errordebuglogintxt;
-
-    public TMP_Text banprichina;
-    public GameObject angryban;
-    public string url;
-    public Image img;
-    public TMP_Text nameusera;
-    public GameObject account;
-    public string[] naruki;
-    public string narukistring;
-
-    public static int skindannaia = 0;
-
-    private int goingnotzagruzka = 0;
 
     private void Start()
     {
@@ -61,14 +49,12 @@ public class login : MonoBehaviour
         versiontxt.text = menMan.version;
         Cursor.lockState = CursorLockMode.None;
         zagruzka.SetActive(true);
-
         if (PlayerPrefs.HasKey("abobusisus"))
         {
             string dId = PlayerPrefs.GetString("abobusisus");
             id = DecryptString(dId);
             print("loaded!");
             anim.SetBool("sus1", true);
-
             if (id == "Guest")
             {
                 ButtonGuestLoginButton();
@@ -84,7 +70,6 @@ public class login : MonoBehaviour
             zagruzka.SetActive(false);
             account.SetActive(false);
         }
-
         FindObjectOfType<userSettingNotCam>().OnSkinChangedNoMP(skindannaia);
     }
 
@@ -106,23 +91,19 @@ public class login : MonoBehaviour
     public IEnumerator ButtonGuestLogin()
     {
         id = "Guest";
-        errordebuglogintxt.text = "Гость: " + id;
-
+        errordebuglogintxt.text = "�������: " + id;
         string encryptedId = EncryptString(id);
         Saver(encryptedId);
-
         anim.SetBool("sus", true);
 
         username = "Guest" + UnityEngine.Random.Range(0, 100000);
         nicknametxt.text = username;
-
         string vers = menMan.version;
         string ssuscoins = "0";
         suscoins = long.Parse(ssuscoins);
-        suscoinsis.text = "0S";
+        suscoinsis.text = "0" + "S";
         skinu = "0,1,2,4";
         url = "https://t4.ftcdn.net/jpg/07/40/34/41/360_F_740344153_IQT8C4zfJj81LWvYcBfCpQXaO1lNeIXW.jpg";
-
         string ban = "0";
         string banprichina2 = "GUEST ERROR!";
 
@@ -130,39 +111,33 @@ public class login : MonoBehaviour
         {
             starversia.SetActive(true);
         }
-
         print(username);
         yield return new WaitForSeconds(4);
-
         zagruzka.SetActive(false);
         magaz.SetActive(false);
         StartCoroutine(Pon());
         nameusera.text = username;
-
         if (ban == "1")
         {
             angryban.SetActive(true);
-            banprichina.text = "Причина: " + banprichina2;
+            banprichina.text = "�������: " + banprichina2;
         }
 
         if (goingnotzagruzka == 0)
         {
             zagruzka.SetActive(true);
         }
-
         sus.ButtonGuest();
     }
 
+    public TMP_Text errordebuglogintxt;
+
     private IEnumerator GetJsonFromAddress()
     {
-        UnityWebRequest request = UnityWebRequest.Get(
-            address + "?email=" + email.text + "&password=" + pass.text + "&pass=" + password
-        );
-
+        UnityWebRequest request = UnityWebRequest.Get(address + "?email=" + email.text + "&password=" + pass.text + "&pass=" + password);
         yield return request.SendWebRequest();
 
-        if (request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.ProtocolError)
+        if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
         {
             print("Error: " + request.error);
             errortxt.text = "Error: " + request.error;
@@ -172,7 +147,6 @@ public class login : MonoBehaviour
         {
             string json = request.downloadHandler.text;
             print(json);
-
             JsonData data = JsonUtility.FromJson<JsonData>(json);
             id = data.id;
 
@@ -180,13 +154,10 @@ public class login : MonoBehaviour
 
             if (id != null)
             {
-                errordebuglogintxt.text = "Успешно: " + id;
-
+                errordebuglogintxt.text = "�������: " + id;
                 string encryptedId = EncryptString(id);
                 Saver(encryptedId);
-
                 anim.SetBool("sus", true);
-
                 StartCoroutine(GetJsonFromAddress2());
                 StartCoroutine(sus.GetJsonFromAddress());
             }
@@ -237,8 +208,7 @@ public class login : MonoBehaviour
         UnityWebRequest request = UnityWebRequest.Get(address2 + "?id=" + id + "&pass=" + password);
         yield return request.SendWebRequest();
 
-        if (request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.ProtocolError)
+        if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
         {
             print("Error: " + request.error);
             errortxt.text = "Error: " + request.error;
@@ -247,11 +217,9 @@ public class login : MonoBehaviour
         {
             string json2 = request.downloadHandler.text;
             print(json2);
-
             JsonData2 data2 = JsonUtility.FromJson<JsonData2>(json2);
             username = data2.username;
             nicknametxt.text = username;
-
             string vers = data2.version;
             string ssuscoins = data2.suscoins;
             suscoins = long.Parse(ssuscoins);
@@ -265,19 +233,16 @@ public class login : MonoBehaviour
             {
                 starversia.SetActive(true);
             }
-
             print(username);
             yield return new WaitForSeconds(4);
-
             zagruzka.SetActive(false);
             magaz.SetActive(false);
             StartCoroutine(Pon());
             nameusera.text = username;
-
             if (ban == "1")
             {
                 angryban.SetActive(true);
-                banprichina.text = "Причина: " + banprichina2;
+                banprichina.text = "�������: " + banprichina2;
             }
 
             if (goingnotzagruzka == 0)
@@ -286,6 +251,19 @@ public class login : MonoBehaviour
             }
         }
     }
+
+    public TMP_Text banprichina;
+    public GameObject angryban;
+    public string url;
+    public Image img;
+    public TMP_Text nameusera;
+    public GameObject account;
+    public string[] naruki;
+    public string narukistring;
+
+    public static int skindannaia = 0;
+
+    private int goingnotzagruzka = 0;
 
     IEnumerator Pon()
     {
@@ -297,11 +275,7 @@ public class login : MonoBehaviour
             Texture2D texture = new Texture2D(www.texture.width, www.texture.height, TextureFormat.RGB24, false);
             www.LoadImageIntoTexture(texture);
 
-            Sprite sprite = Sprite.Create(
-                texture,
-                new Rect(0, 0, texture.width, texture.height),
-                new Vector2(0, 0)
-            );
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0, 0));
 
             img.sprite = sprite;
             account.SetActive(false);
@@ -334,10 +308,9 @@ public class login : MonoBehaviour
     {
         if (suscoins >= cena)
         {
-            suscoins -= cena;
+            suscoins = suscoins - cena;
             skinu += "," + id;
             print(skinu);
-
             StartCoroutine(GetJsonFromAddress23(skinu, suscoins));
             suscoinsis.text = suscoins + "S";
             skinmanager228.spawnbuyedskinsmenu(id);
@@ -346,14 +319,10 @@ public class login : MonoBehaviour
 
     private IEnumerator GetJsonFromAddress23(string skin1, long suscoin)
     {
-        UnityWebRequest request = UnityWebRequest.Get(
-            address3 + "?id=" + login.id + "&suscoins=" + suscoin + "&skins=" + skin1 + "&pass=" + password
-        );
-
+        UnityWebRequest request = UnityWebRequest.Get(address3 + "?id=" + login.id + "&suscoins=" + suscoin + "&skins=" + skin1 + "&pass=" + password);
         yield return request.SendWebRequest();
 
-        if (request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.ProtocolError)
+        if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
         {
             print("Error: " + request.error);
             errortxt.text = "Error: " + request.error;
@@ -370,13 +339,11 @@ public class login : MonoBehaviour
     {
         if (suscoins >= cena)
         {
-            suscoins -= cena;
+            suscoins = suscoins - cena;
             narukistring = narukistring + "," + id;
-
             List<string> list = new List<string>();
             list.Add(id.ToString());
             skinmanager.sugoma = skinmanager.sugoma.Concat(list).ToArray();
-
             print(narukistring);
             StartCoroutine(GetJsonFromAddress24(narukistring, suscoins));
             suscoinsis.text = suscoins + "S";
@@ -385,14 +352,10 @@ public class login : MonoBehaviour
 
     private IEnumerator GetJsonFromAddress24(string skin1, long suscoin)
     {
-        UnityWebRequest request = UnityWebRequest.Get(
-            address4 + "?id=" + login.id + "&suscoins=" + suscoin + "&items=" + skin1 + "&pass=" + password
-        );
-
+        UnityWebRequest request = UnityWebRequest.Get(address4 + "?id=" + login.id + "&suscoins=" + suscoin + "&items=" + skin1 + "&pass=" + password);
         yield return request.SendWebRequest();
 
-        if (request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.ProtocolError)
+        if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
         {
             print("Error: " + request.error);
             errortxt.text = "Error: " + request.error;

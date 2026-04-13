@@ -963,7 +963,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 5
   m_TargetDisplay: 0
 --- !u!224 &20851355
 RectTransform:
@@ -1059,6 +1059,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4410d6a5bc9c6cb4ab0494043a46f7c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  path: []
   prefabik: {fileID: 2550805084093404892, guid: ff3a948315e61ab498c6cf78c1723042,
     type: 3}
   slider: {fileID: 1014631178}
@@ -53690,6 +53691,11 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2289653479696467898, guid: 6bacecc4f3df9584198879c73a6b6c36,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -52.899902
+      objectReference: {fileID: 0}
     - target: {fileID: 2315659437361076174, guid: 6bacecc4f3df9584198879c73a6b6c36,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -54880,6 +54886,11 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5317259353968832580, guid: 6bacecc4f3df9584198879c73a6b6c36,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -52.899902
+      objectReference: {fileID: 0}
     - target: {fileID: 5322942958500317693, guid: 6bacecc4f3df9584198879c73a6b6c36,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -55914,6 +55925,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_StaticEditorFlags
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7033455769870505598, guid: 6bacecc4f3df9584198879c73a6b6c36,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -104.6001
+      objectReference: {fileID: 0}
+    - target: {fileID: 7033455769870505598, guid: 6bacecc4f3df9584198879c73a6b6c36,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 150.90002
       objectReference: {fileID: 0}
     - target: {fileID: 7079198664590215113, guid: 6bacecc4f3df9584198879c73a6b6c36,
         type: 3}
@@ -62151,15 +62172,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce765ed75b4b22147841ccf735d9abb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  address: https://www.epicsusgames.ru/eggode2/getshop.php
-  whatskin: 2
-  zagruzka: {fileID: 548680269}
+  address: 
+  whatskin: 0
+  zagruzka: {fileID: 0}
   sus: {fileID: 0}
-  cena: 0
-  cenik: {fileID: 380615835}
-  but: {fileID: 1410827112}
-  zagruzka228: 0
-  SHOP: {fileID: 795719784}
+  cena: 10
+  cenik: {fileID: 0}
+  but: {fileID: 0}
+  zagruzka228: 1
+  SHOP: {fileID: 0}
 --- !u!1 &1945816592
 GameObject:
   m_ObjectHideFlags: 0

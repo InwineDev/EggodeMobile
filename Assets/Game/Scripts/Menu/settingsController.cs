@@ -1,10 +1,13 @@
+using JetBrains.Annotations;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
+using static SaveMap;
 
 public class settingsController : MonoBehaviour
 {
@@ -64,7 +67,14 @@ public class settingsController : MonoBehaviour
 
     public void OnChangeNickname(string newNick)
     {
-        nickname = newNick.Length > 10 ? newNick.Substring(0, 10) : newNick;
+        if (newNick.Length > 10)
+        {
+            nickname = newNick.Substring(0, 10);
+        }
+        else
+        {
+            nickname = newNick;
+        }
     }
 
     public void ChangeMicro(int num)
@@ -75,7 +85,7 @@ public class settingsController : MonoBehaviour
     private void ChangeSavedTheme(int toSave)
     {
         themeChoosen = toSave;
-        choosedTheme.text = "Выбрана тема под номером " + toSave;
+        choosedTheme.text = "������� ���� �� ������ " + toSave;
     }
 
     public void ChangeLevel(int value)
@@ -96,11 +106,9 @@ public class settingsController : MonoBehaviour
             nastroiki.SetActive(false);
         }
 
-        microphoneList.ClearOptions();
-
         if (Microphone.devices.Length == 0)
         {
-            Debug.LogWarning("Микрофоны не найдены.");
+            Debug.LogError("�������� �� ������! ���������� �������� � ������������� ����.");
             return;
         }
 
@@ -109,43 +117,27 @@ public class settingsController : MonoBehaviour
         {
             options.Add(deviceName);
         }
-
         microphoneList.AddOptions(options);
     }
 
     public void LoadThemes()
     {
-        string themesDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs", "Themes");
-
-        if (!Directory.Exists(themesDir))
+        var info = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Themes"));
+        var fileInfo = info.GetFiles();
+        foreach (var item1 in themes)
         {
-            Debug.LogWarning($"Папка тем не найдена: {themesDir}");
-            return;
+            Destroy(item1);
         }
-
-        DirectoryInfo info = new DirectoryInfo(themesDir);
-        FileInfo[] fileInfo = info.GetFiles();
-
-        foreach (var item in themes)
-        {
-            if (item != null)
-            {
-                Destroy(item);
-            }
-        }
-
         themes.Clear();
-
         for (int i = 0; i < fileInfo.Length; i++)
         {
-            string jsonText = File.ReadAllText(fileInfo[i].FullName);
-            theme themeData = JsonUtility.FromJson<theme>(jsonText);
-
-            GameObject s = Instantiate(prefabTheme, content.transform, false);
+            string jsonText = System.IO.File.ReadAllText(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Themes", fileInfo[i].FullName));
+            theme Theme = JsonUtility.FromJson<theme>(jsonText);
+            GameObject s = Instantiate(prefabTheme);
+            s.transform.SetParent(content.transform, false);
             ThemeInfo ti = s.GetComponent<ThemeInfo>();
-            ti.themeName = themeData.name;
+            ti.themeName = Theme.name;
             ti.themeId = i;
-
             themes.Add(s);
         }
     }
@@ -163,34 +155,37 @@ public class settingsController : MonoBehaviour
     public void OnChangeKillExitBUtton()
     {
         killExitButton = killExitButtonToggle.isOn;
-
         if (killExitButton)
+        {
             killExitButtonAction?.Invoke();
+        }
         else
+        {
             aliveExitButtonAction?.Invoke();
+        }
     }
 
     public void SetFPS()
     {
-        if ((int)FPS.value == 0)
+        if (FPS.value == 0)
         {
             QualitySettings.vSyncCount = 1;
-            maxFPS = 0;
-            FPSTXT.text = "V-Sync";
+            maxFPS = (int)FPS.value;
+            FPSTXT.text = "V-Syns";
         }
         else
         {
             QualitySettings.vSyncCount = 0;
+            UnityEngine.Application.targetFrameRate = (int)FPS.value;
             maxFPS = (int)FPS.value;
-            Application.targetFrameRate = maxFPS;
             FPSTXT.text = maxFPS.ToString();
         }
     }
 
     public void SetMUSIC()
     {
-        musicSource.volume = MUSIC.value;
-        MUSICTXT.text = Mathf.RoundToInt(MUSIC.value * 100).ToString();
+        musicSource.volume = Mathf.Round(MUSIC.value);
+        MUSICTXT.text = Mathf.Round(MUSIC.value * 100).ToString();
     }
 
     public void Save()
@@ -207,73 +202,56 @@ public class settingsController : MonoBehaviour
             nick = nickname,
             micro = micronum
         };
-
         string json = JsonUtility.ToJson(settingsDownloader, true);
 
-        string configDir = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs");
-        Directory.CreateDirectory(configDir);
-
-        string settingsPath = Path.Combine(configDir, "Settings.eggodesettings");
-        File.WriteAllText(settingsPath, json);
+        File.WriteAllText(Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/") + "Settings.eggodesettings", json);
     }
 
     private void Load()
     {
         try
         {
-            string jsonFilePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "GameConfigs", "Settings.eggodesettings");
-
-            if (!File.Exists(jsonFilePath))
-                return;
-
-            jsonSettings = File.ReadAllText(jsonFilePath);
+            string jsonFilePath = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath), "GameConfigs/Settings.eggodesettings");
+            jsonSettings = System.IO.File.ReadAllText(jsonFilePath);
 
             SettingsDownloader settingsDownloader = JsonUtility.FromJson<SettingsDownloader>(jsonSettings);
-
             FPS.value = settingsDownloader.maxFPS;
             SetFPS();
-
             sborDannie = settingsDownloader.sborDannieBool;
             sborDannih.isOn = sborDannie;
-
             MUSIC.value = settingsDownloader.musicVolume;
             SetMUSIC();
-
             graphic.value = settingsDownloader.graphic;
-
             themeNumber = settingsDownloader.themeNumber;
             themeChange?.Invoke(themeNumber);
-
             ChangeLevel(settingsDownloader.graphic);
-
-            nickname = string.IsNullOrEmpty(settingsDownloader.nick)
-                ? ""
-                : (settingsDownloader.nick.Length > 10 ? settingsDownloader.nick.Substring(0, 10) : settingsDownloader.nick);
-
+            if (settingsDownloader.nick.Length > 10)
+            {
+                nickname = settingsDownloader.nick.Substring(0, 10);
+            }
+            else
+            {
+                nickname = settingsDownloader.nick;
+            }
             nickField.text = nickname;
-
             killExitButton = settingsDownloader.killExitButton;
             killExitButtonToggle.isOn = killExitButton;
-
             developer = settingsDownloader.developerModeBool;
             developerMode.isOn = developer;
-
             if (killExitButton)
-                killExitButtonAction?.Invoke();
-            else
-                aliveExitButtonAction?.Invoke();
-
-            playerSkin.LocalLoad();
-
-            micronum = settingsDownloader.micro;
-            if (microphoneList.options.Count > 0)
             {
-                microphoneList.value = Mathf.Clamp(micronum, 0, microphoneList.options.Count - 1);
+                killExitButtonAction?.Invoke();
             }
+            else
+            {
+                aliveExitButtonAction?.Invoke();
+            }
+            playerSkin.LocalLoad();
+            micronum = settingsDownloader.micro;
+            microphoneList.value = micronum;
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.LogError($"Ошибка загрузки настроек: {ex}");
         }
     }
 }

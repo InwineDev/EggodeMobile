@@ -2,8 +2,12 @@ using Mirror;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem.EnhancedTouch;
 using static scriptor;
+using static UnityEngine.Rendering.DebugUI;
 
 public abstract class VirtualNode
 {
@@ -16,7 +20,6 @@ public abstract class VirtualNode
     public int ExecutionPriority { get; set; }
 
     public abstract void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered);
-
     protected VirtualGraphExecutor Executor { get; private set; }
 
     public void SetExecutor(VirtualGraphExecutor executor)
@@ -34,10 +37,9 @@ public abstract class VirtualNode
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Ошибка преобразования значения для сокета {socketId}: {ex.Message}");
+                Debug.LogError($"������ �������������� �������� ��� ������ {socketId}: {ex.Message}");
             }
         }
-
         return defaultValue;
     }
 
@@ -53,7 +55,7 @@ public abstract class VirtualNode
         {
             if (!context.ContainsKey(inputSocketId))
             {
-                Debug.LogWarning($"Не найдено значение для входа {inputSocketId} в ноде {GetType().Name}");
+                Debug.LogWarning($"�� �������� �������� ��� ����� {inputSocketId} � ���� {GetType().Name}");
             }
         }
     }
@@ -63,7 +65,7 @@ public class VirtualOnStartNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log($"Нода выполнена при старте! Объект вызова: {caller.name}");
+        Debug.Log($"����� ���������� �����! ������� ��������: {caller.name}");
         Executor?.ExecuteConnections(this, context, caller, triggered);
     }
 }
@@ -72,7 +74,7 @@ public class VirtualOnTriggerEnterNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log($"Нода выполнена после trigger! Объект вызова: {caller.name}");
+        Debug.Log($"����� ���������� ����� ����� trigger! ������� ��������: {caller.name}");
         Executor?.ExecuteConnections(this, context, caller, triggered);
     }
 }
@@ -81,7 +83,7 @@ public class VirtualOnCollisionEnterNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log($"Нода выполнена после collision! Объект вызова: {caller.name}");
+        Debug.Log($"����� ���������� ����� ����� collision! ������� ��������: {caller.name}");
         Executor?.ExecuteConnections(this, context, caller, triggered);
     }
 }
@@ -90,21 +92,16 @@ public class VirtualDestroyNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log("Пытаюсь удалить объекты");
-
+        Debug.Log($"������� �������� �������");
         foreach (var socketsId in SocketsFromInputIds)
         {
             if (context.TryGetValue(socketsId, out var obj) && obj is List<GameObject> gameObj)
             {
                 foreach (var item1 in gameObj)
                 {
-                    if (item1 != null)
-                    {
-                        NetworkServer.Destroy(item1);
-                        Debug.Log($"Объект уничтожен: {item1.name}");
-                    }
+                    NetworkServer.Destroy(item1);
+                    Debug.Log($"������ ���������: {item1.name}");
                 }
-
                 Executor?.ExecuteConnections(this, context, caller, triggered);
             }
         }
@@ -115,44 +112,31 @@ public class VirtualChangeGravityNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log("Пытаюсь поменять isKinematic");
-
+        Debug.Log($"������� ��������� ���������� �������");
         GameObject gObj = null;
         bool gBool = false;
-
         foreach (var socketsId in SocketsFromInputIds)
         {
             if (context.TryGetValue(socketsId, out var obj) && obj is GameObject gameObj)
             {
                 gObj = gameObj;
+                Debug.Log(gObj);
             }
-
             if (context.TryGetValue(socketsId, out var booling) && booling is bool booled)
             {
                 gBool = booled;
+                Debug.Log(gBool);
             }
         }
-
         try
         {
-            if (gObj != null)
-            {
-                Rigidbody rb = gObj.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.isKinematic = gBool;
-                    Debug.Log($"Установлен isKinematic={gBool} на объекте {gObj.name}");
-                    Executor?.ExecuteConnections(this, context, caller, triggered);
-                }
-                else
-                {
-                    Debug.LogWarning($"На объекте {gObj.name} нет Rigidbody");
-                }
-            }
+            gObj.GetComponent<Rigidbody>().isKinematic = gBool;
+            Debug.Log($"������ isKinematic {gBool} �� ������: {gObj.name}");
+            Executor?.ExecuteConnections(this, context, caller, triggered);
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.LogError($"Ошибка VirtualChangeGravityNode: {ex}");
+            Debug.Log("Error");
         }
     }
 }
@@ -161,41 +145,29 @@ public class VirtualDamageNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log("Пытаюсь нанести урон");
-
+        Debug.Log($"������� ����� �������");
         foreach (var socketsId in SocketsFromInputIds)
         {
             if (context.TryGetValue(socketsId, out var obj) && obj is int uron)
             {
                 try
                 {
-                    if (triggered == null)
-                        continue;
-
                     HealthPlayer healthPlayer = triggered.GetComponent<HealthPlayer>();
-                    bool canDamage = serverProperties.instance != null && serverProperties.instance.hp;
-
-                    if (canDamage && healthPlayer != null)
+                    bool uron2 = serverProperties.instance.hp;
+                    if (uron2 & healthPlayer != null)
                     {
                         healthPlayer.health -= uron;
-
                         if (healthPlayer.health <= 0)
                         {
                             healthPlayer.health = 100;
-                        }
-
-                        if (healthPlayer.hp != null)
-                        {
                             healthPlayer.hp.text = $"{healthPlayer.health} HP";
                         }
-
-                        Debug.Log($"Урон нанесён: {uron}");
+                        Debug.Log($"������ ��������: {healthPlayer}");
                         Executor?.ExecuteConnections(this, context, caller, triggered);
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Debug.LogError($"Ошибка VirtualDamageNode: {ex}");
                 }
             }
         }
@@ -206,38 +178,27 @@ public class VirtualShowMessageNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log("Пытаюсь показать сообщение игроку");
-
+        Debug.Log($"������� �������� ������� �������");
         string txt = "null";
         float time = 0f;
-
         foreach (var socketsId in SocketsFromInputIds)
         {
             if (context.TryGetValue(socketsId, out var fl) && fl is float ti)
             {
                 time = ti;
             }
-
             if (context.TryGetValue(socketsId, out var str) && str is string text)
             {
                 txt = text;
             }
         }
-
         try
         {
-            if (triggered != null)
-            {
-                var usc = triggered.GetComponent<userSettingNotCam>();
-                if (usc != null && usc.messageController != null)
-                {
-                    usc.messageController.ShowMessage(txt, time);
-                }
-            }
+            Debug.Log($"��������� ������� ���� {txt} {time}");
+            triggered.GetComponent<userSettingNotCam>().messageController.ShowMessage(txt, time);
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.LogError($"Ошибка VirtualShowMessageNode: {ex}");
         }
     }
 }
@@ -246,24 +207,19 @@ public class VirtualTpNode : VirtualNode
 {
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
-        Debug.Log("Пытаюсь телепортировать объект");
-
+        Debug.Log($"������� ������������ �������");
         foreach (var socketsId in SocketsFromInputIds)
         {
             if (context.TryGetValue(socketsId, out var obj) && obj is Vector3 position)
             {
                 try
                 {
-                    if (triggered != null)
-                    {
-                        triggered.transform.position = position;
-                        Debug.Log($"Объект телепортирован в {position}");
-                        Executor?.ExecuteConnections(this, context, caller, triggered);
-                    }
+                    triggered.transform.position = position;
+                    Debug.Log($"������ ��������������!");
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Ошибка телепорта: {ex}");
+                    Debug.Log($"������ �� ��������������! " + ex);
                 }
             }
         }
@@ -279,7 +235,7 @@ public class VirtualFloatNode : VirtualNode
         foreach (var socketsId in SocketsFromOutputIds)
         {
             SetOutputValue(context, socketsId, Value);
-            Debug.Log($"FloatNode записал {Value} в {socketsId}");
+            Debug.Log($"FloatNode ������� �������� {Value} � ����� {socketsId}");
         }
     }
 }
@@ -292,37 +248,32 @@ public class VirtualVectorNode : VirtualNode
 
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
+        Debug.Log($"EXECUTED MEMES");
         try
         {
-            if (SocketsFromInputIds.Count > 0 &&
-                context.TryGetValue(SocketsFromInputIds[0], out var fl0) && fl0 is float ti0)
+            if (context.TryGetValue(SocketsFromInputIds[0], out var fl) && fl is float ti)
             {
-                x = ti0;
+                x = ti;
             }
-
-            if (SocketsFromInputIds.Count > 1 &&
-                context.TryGetValue(SocketsFromInputIds[1], out var fl1) && fl1 is float ti1)
+            if (context.TryGetValue(SocketsFromInputIds[1], out var fl1) && fl is float ti1)
             {
                 y = ti1;
             }
-
-            if (SocketsFromInputIds.Count > 2 &&
-                context.TryGetValue(SocketsFromInputIds[2], out var fl2) && fl2 is float ti2)
+            if (context.TryGetValue(SocketsFromInputIds[2], out var fl2) && fl is float ti2)
             {
                 z = ti2;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.LogError($"Ошибка VirtualVectorNode: {ex}");
+            Debug.Log($"OhFUCK");
         }
 
         Vector3 vector = new Vector3(x, y, z);
-
         foreach (var socketsId in SocketsFromOutputIds)
         {
             SetOutputValue(context, socketsId, vector);
-            Debug.Log($"VectorNode записал {vector} в {socketsId}");
+            Debug.Log($"VectorNode ������� �������� {vector} � ����� {socketsId}");
         }
     }
 }
@@ -336,7 +287,7 @@ public class VirtualBoolNode : VirtualNode
         foreach (var socketsId in SocketsFromOutputIds)
         {
             SetOutputValue(context, socketsId, Value);
-            Debug.Log($"BoolNode записал {Value} в {socketsId}");
+            Debug.Log($"BoolNode ������� �������� {Value} � ����� {socketsId}");
         }
     }
 }
@@ -357,7 +308,6 @@ public class VirtualBooledNode : VirtualNode
             {
                 x = val1;
             }
-
             if (SocketsFromInputIds.Count > 1 && context.TryGetValue(SocketsFromInputIds[1], out var val2))
             {
                 y = val2;
@@ -367,14 +317,14 @@ public class VirtualBooledNode : VirtualNode
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Ошибка в VirtualBooledNode: {ex.Message}");
+            Debug.Log($"������ � VirtualBooledNode: {ex.Message}");
             result = false;
         }
 
         foreach (var socketsId in SocketsFromOutputIds)
         {
             SetOutputValue(context, socketsId, result);
-            Debug.Log($"BooledNode записал {result} в {socketsId}");
+            Debug.Log($"BooledNode ������� �������� {result} � ����� {socketsId}");
         }
     }
 
@@ -407,7 +357,7 @@ public class VirtualBooledNode : VirtualNode
             case 3:
                 return !string.Equals(x, y, StringComparison.Ordinal);
             default:
-                Debug.LogWarning($"Неизвестный тип операции для строк: {opType}");
+                Debug.LogWarning($"����������� ��� �������� ��� �����: {opType}");
                 return false;
         }
     }
@@ -422,13 +372,15 @@ public class VirtualBooledNode : VirtualNode
             case 0:
                 return Math.Abs(numX - numY) < 0.000001;
             case 1:
+                Debug.Log(numX > numY + numX + numY);
                 return numX > numY;
             case 2:
+                Debug.Log(numX < numY + numX + numY);
                 return numX < numY;
             case 3:
                 return Math.Abs(numX - numY) > 0.000001;
             default:
-                Debug.LogWarning($"Неизвестный тип операции для чисел: {opType}");
+                Debug.LogWarning($"����������� ��� �������� ��� �����: {opType}");
                 return false;
         }
     }
@@ -438,7 +390,7 @@ public class VirtualBooledNode : VirtualNode
         switch (opType)
         {
             case 0:
-                return Equals(x, y);
+                return object.Equals(x, y);
             case 1:
                 try
                 {
@@ -448,7 +400,7 @@ public class VirtualBooledNode : VirtualNode
                 }
                 catch
                 {
-                    Debug.LogWarning("Не удалось сравнить значения для операции >");
+                    Debug.LogWarning("���������� �������� ������� ��� ����� ��� �������� >");
                     return false;
                 }
             case 2:
@@ -460,13 +412,13 @@ public class VirtualBooledNode : VirtualNode
                 }
                 catch
                 {
-                    Debug.LogWarning("Не удалось сравнить значения для операции <");
+                    Debug.LogWarning("���������� �������� ������� ��� ����� ��� �������� <");
                     return false;
                 }
             case 3:
-                return !Equals(x, y);
+                return !object.Equals(x, y);
             default:
-                Debug.LogWarning($"Неизвестный тип операции: {opType}");
+                Debug.LogWarning($"����������� ��� ��������: {opType}");
                 return false;
         }
     }
@@ -487,7 +439,7 @@ public class VirtualIntNode : VirtualNode
         foreach (var socketsId in SocketsFromOutputIds)
         {
             SetOutputValue(context, socketsId, Value);
-            Debug.Log($"IntNode записал {Value} в {socketsId}");
+            Debug.Log($"IntNode ������� �������� {Value} � ����� {socketsId}");
         }
     }
 }
@@ -501,7 +453,7 @@ public class VirtualStringNode : VirtualNode
         foreach (var socketsId in SocketsFromOutputIds)
         {
             SetOutputValue(context, socketsId, Value);
-            Debug.Log($"StringNode записал {Value} в {socketsId}");
+            Debug.Log($"StringNode ������� �������� {Value} � ����� {socketsId}");
         }
     }
 }
@@ -518,30 +470,24 @@ public class VirtualGetValueNode : VirtualNode
 
             foreach (var socketsId in SocketsFromInputIds)
             {
+                Debug.Log(socketsId);
                 if (context.TryGetValue(socketsId, out var fl) && fl is List<GameObject> ti)
                 {
                     obj = ti;
                 }
             }
 
-            if (obj == null || obj.Count == 0 || obj[0] == null)
-                return;
-
-            VarDictionary varDictionary = obj[0].GetComponent<VarDictionary>();
-            if (varDictionary == null || varDictionary.values == null || !varDictionary.values.ContainsKey(Value))
-                return;
-
-            var outVar = varDictionary.values[Value];
+            var outVar = obj[0].GetComponent<VarDictionary>().values[Value];
 
             foreach (var socketsId in SocketsFromOutputIds)
             {
                 SetOutputValue(context, socketsId, outVar);
-                Debug.Log($"GetValueNode записал {outVar} в {socketsId}");
+                Debug.Log($"GetValue ������� �������� {outVar} � ����� {socketsId}");
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"GetValueNode ошибка: {e}");
+            Debug.LogError($"GetValue ��������� ��� ���������� {e}");
         }
     }
 }
@@ -556,41 +502,26 @@ public class VirtualSetValueNode : VirtualNode
         {
             List<GameObject> obj = null;
             object newVar = null;
-
             foreach (var socketsId in SocketsFromInputIds)
             {
                 if (context.TryGetValue(socketsId, out var fl) && fl is List<GameObject> ti)
                 {
                     obj = ti;
                 }
-
-                if (context.TryGetValue(socketsId, out var outVar))
+                if (context.TryGetValue(socketsId, out var str) && str is var outVar)
                 {
                     newVar = outVar;
                 }
             }
-
-            if (obj == null)
-                return;
-
             foreach (var item1 in obj)
             {
-                if (item1 == null)
-                    continue;
-
-                VarDictionary varDictionary = item1.GetComponent<VarDictionary>();
-                if (varDictionary == null || varDictionary.values == null)
-                    continue;
-
-                varDictionary.values[Value] = newVar;
-                Debug.Log($"SetValueNode: ключ {Value}, значение {newVar}, объект {item1.name}");
+                Debug.Log("SET VALUE " + newVar + " with key " + Value + item1);
+                item1.GetComponent<VarDictionary>().values[Value] = newVar;
+                Debug.Log("set val " + item1.name);
             }
-
-            Executor?.ExecuteConnections(this, context, caller, triggered);
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.LogError($"Ошибка VirtualSetValueNode: {ex}");
         }
     }
 }
@@ -606,7 +537,7 @@ public class VirtualIntRandomNode : VirtualNode
         {
             int newValue = UnityEngine.Random.Range(ValueFrom, ValueTo);
             SetOutputValue(context, socketsId, newValue);
-            Debug.Log($"IntRandomNode записал {newValue} в {socketsId}");
+            Debug.Log($"IntRandomNode ������� �������� {newValue} � ����� {socketsId}");
         }
     }
 }
@@ -622,7 +553,7 @@ public class VirtualFloatRandomNode : VirtualNode
         {
             float newValue = UnityEngine.Random.Range(ValueFrom, ValueTo);
             SetOutputValue(context, socketsId, newValue);
-            Debug.Log($"FloatRandomNode записал {newValue} в {socketsId}");
+            Debug.Log($"FloatRandomNode ������� �������� {newValue} � ����� {socketsId}");
         }
     }
 }
@@ -635,19 +566,17 @@ public class VirtualThisObjectNode : VirtualNode
     {
         GameObject gameObjectCaller = caller as GameObject;
         List<GameObject> list = new List<GameObject>();
-
+        list.Add(gameObjectCaller);
         if (gameObjectCaller == null)
         {
             Debug.LogError("VirtualThisObjectNode: caller is not a GameObject");
             return;
         }
 
-        list.Add(gameObjectCaller);
-
         foreach (var outputSocketId in SocketsFromOutputIds)
         {
             context[outputSocketId] = list;
-            Debug.Log($"VirtualThisObjectNode записал ссылку на {gameObjectCaller.name} в {outputSocketId}");
+            Debug.Log($"VirtualThisObjectNode ������� �������� {list} � ����� {outputSocketId}");
         }
     }
 }
@@ -662,33 +591,19 @@ public class VirtualTimeSleepNode : VirtualNode
         {
             if (context.TryGetValue(socketsId, out var obj) && obj is float floatValue)
             {
-                try
-                {
-                    DelaySeconds = Convert.ToSingle(floatValue);
-                }
-                catch
-                {
-                    Debug.Log($"Ошибка преобразования DelaySeconds: {floatValue}");
-                }
+                try { DelaySeconds = Convert.ToSingle(floatValue); }
+                catch { Debug.Log($"������ ��������: {floatValue}"); }
             }
         }
 
-        Debug.Log($"Задержка: {DelaySeconds}");
-
-        if (ModLoader.instance != null)
-        {
-            ModLoader.instance.StartCoroutine(DelayCoroutine(context, caller, triggered));
-        }
-        else
-        {
-            Debug.LogError("ModLoader.instance == null");
-        }
+        Debug.Log($"����� ��������: {DelaySeconds}");
+        ModLoader.instance.StartCoroutine(DelayCoroutine(context, caller, triggered));
     }
 
     private IEnumerator DelayCoroutine(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
         yield return new WaitForSeconds(DelaySeconds);
-        Debug.Log("TimeSleepNode завершил ожидание");
+        Debug.Log($"TimeSleepNode �������� ��������");
         Executor?.ExecuteConnections(this, context, caller, triggered);
     }
 }
@@ -698,7 +613,6 @@ public class VirtualIfNode : VirtualNode
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
         bool ifval = false;
-
         foreach (var socketsId in SocketsFromInputIds)
         {
             if (context.TryGetValue(socketsId, out var fl) && fl is bool ti)
@@ -706,7 +620,7 @@ public class VirtualIfNode : VirtualNode
                 ifval = ti;
             }
         }
-
+        Debug.Log(ifval);
         if (ifval)
         {
             Executor?.ExecuteConnections(this, context, caller, triggered, 0);
@@ -743,14 +657,7 @@ public class VirtualForNode : VirtualNode
 
 public class VirtualMathNode : VirtualNode
 {
-    public enum Operation
-    {
-        Add,
-        Subtract,
-        Multiply,
-        Divide
-    }
-
+    public enum Operation { Add, Subtract, Multiply, Divide }
     public Operation OpType;
 
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
@@ -758,19 +665,18 @@ public class VirtualMathNode : VirtualNode
         if (context.TryGetValue("inputA", out var aObj) &&
             context.TryGetValue("inputB", out var bObj))
         {
-            float a = Convert.ToSingle(aObj);
-            float b = Convert.ToSingle(bObj);
-
+            float a = (float)aObj;
+            float b = (float)bObj;
             float result = OpType switch
             {
                 Operation.Add => a + b,
                 Operation.Subtract => a - b,
                 Operation.Multiply => a * b,
-                Operation.Divide => b != 0 ? a / b : 0,
+                Operation.Divide => a / b,
                 _ => 0
             };
 
-            Debug.Log($"Результат: {result} (объект {caller.name})");
+            Debug.Log($"���������: {result} (������� {caller.name})");
             context["output"] = result;
         }
     }
@@ -784,32 +690,24 @@ public class VirtualObjectFromIdNode : VirtualNode
     public override void Execute(Dictionary<string, object> context, GameObject caller, GameObject triggered)
     {
         List<GameObject> fromIds = new List<GameObject>();
-
-        if (serverProperties.instance == null || serverProperties.instance.allBlocks == null)
-        {
-            Debug.LogError("serverProperties.instance или allBlocks == null");
-            return;
-        }
-
         foreach (var item1 in serverProperties.instance.allBlocks)
         {
-            if (item1 != null && item1.id == Value)
+            if (item1.id == Value)
             {
                 fromId = item1;
                 fromIds.Add(item1.gameObject);
             }
         }
-
         if (fromId == null)
         {
-            Debug.LogError("VirtualObjectFromIdNode: объект с таким id не найден");
+            Debug.LogError("VirtualObjectFromIdNode: caller is not a GameObject");
             return;
         }
 
         foreach (var outputSocketId in SocketsFromOutputIds)
         {
             context[outputSocketId] = fromIds;
-            Debug.Log($"VirtualObjectFromIdNode записал {fromIds.Count} объектов в {outputSocketId}");
+            Debug.Log($"VirtualObjectFromIdNode ������� �������� {fromIds} � ����� {outputSocketId}");
         }
     }
 }
